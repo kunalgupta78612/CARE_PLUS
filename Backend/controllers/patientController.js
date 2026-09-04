@@ -34,7 +34,7 @@ const generateToken = (id, role) => {
 // @access  Public
 export const registerPatient = async (req, res, next) => {
   try {
-    const { name, email, password, phone, age, gender, bloodType } = req.body;
+    const { name, email, password, phone, role, age, gender, bloodType } = req.body;
 
     if (!name || !email || !password || !phone) {
       return res.status(400).json({
@@ -43,13 +43,17 @@ export const registerPatient = async (req, res, next) => {
       });
     }
 
-    // Check if patient already exists in DB
+    const selectedRole = (role && ['patient', 'doctor', 'admin', 'receptionist'].includes(role.toLowerCase()))
+      ? role.toLowerCase()
+      : 'patient';
+
+    // Check if user already exists in DB
     try {
       const patientExists = await Patient.findOne({ email: email.toLowerCase() });
       if (patientExists) {
         return res.status(400).json({
           success: false,
-          message: 'Patient account already exists with this email address',
+          message: 'Account already exists with this email address',
         });
       }
 
@@ -58,6 +62,7 @@ export const registerPatient = async (req, res, next) => {
         email: email.toLowerCase(),
         password,
         phone,
+        role: selectedRole,
         age: age || 30,
         gender: gender || 'Not Specified',
         bloodType: bloodType || 'O+',
@@ -101,7 +106,7 @@ export const registerPatient = async (req, res, next) => {
         email: email.toLowerCase(),
         passwordHash,
         phone,
-        role: 'patient',
+        role: selectedRole,
         age: age || 30,
         gender: gender || 'Male',
         bloodType: bloodType || 'O+',

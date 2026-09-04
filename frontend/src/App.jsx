@@ -6,6 +6,10 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import PatientDashboard from './pages/PatientDashboard';
+import DoctorDashboard from './pages/DoctorDashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import ReceptionistDashboard from './pages/ReceptionistDashboard';
+import { ProtectedRoute } from './components/common/ProtectedRoute';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,16 +25,34 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
-          {/* MainLayout parent route */}
+          {/* Main Public Layout Routes */}
           <Route path="/" element={<MainLayout />}>
             <Route index element={<LandingPage />} />
             <Route path="login" element={<LoginPage />} />
             <Route path="register" element={<RegisterPage />} />
           </Route>
 
-          {/* Patient Dashboard standalone layout */}
-          <Route path="/patient-dashboard" element={<PatientDashboard />} />
-          <Route path="/patient" element={<PatientDashboard />} />
+          {/* Protected Role-Based Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['patient']} />}>
+            <Route path="/patient-dashboard" element={<PatientDashboard />} />
+            <Route path="/patient" element={<PatientDashboard />} />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={['doctor']} />}>
+            <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
+            <Route path="/doctor" element={<DoctorDashboard />} />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={['receptionist']} />}>
+            <Route path="/receptionist-dashboard" element={<ReceptionistDashboard />} />
+            <Route path="/receptionist" element={<ReceptionistDashboard />} />
+          </Route>
+
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
