@@ -80,22 +80,22 @@ const Navbar = ({ onOpenBooking, onOpenAuth, onOpenRegister }) => {
           {/* Action Buttons: Register & Login & Booking */}
           <div className="hidden md:flex items-center space-x-3">
             {/* Login Button */}
-            <button
-              onClick={onOpenAuth}
+            <Link
+              to="/login"
               className="flex items-center space-x-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:text-blue-600 hover:bg-slate-100 transition-all border border-slate-200 shadow-sm"
             >
               <UserCheck className="w-4 h-4 text-blue-600" />
               <span>Login</span>
-            </button>
+            </Link>
 
             {/* Register Button */}
-            <button
-              onClick={onOpenRegister || onOpenAuth}
+            <Link
+              to="/register"
               className="flex items-center space-x-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 transition-all border border-blue-200 shadow-sm"
             >
               <UserPlus className="w-4 h-4 text-blue-600" />
               <span>Register</span>
-            </button>
+            </Link>
 
             {/* Book Appointment CTA */}
             <button
@@ -177,21 +177,23 @@ const Navbar = ({ onOpenBooking, onOpenAuth, onOpenRegister }) => {
           
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
             <div className="grid grid-cols-2 gap-2">
-              <button 
-                onClick={() => { setMobileMenuOpen(false); if (onOpenAuth) onOpenAuth(); }}
+              <Link 
+                to="/login"
+                onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200"
               >
                 <UserCheck className="w-4 h-4 text-blue-600" />
                 <span>Login</span>
-              </button>
+              </Link>
 
-              <button 
-                onClick={() => { setMobileMenuOpen(false); if (onOpenRegister) onOpenRegister(); else if (onOpenAuth) onOpenAuth(); }}
+              <Link 
+                to="/register"
+                onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200"
               >
                 <UserPlus className="w-4 h-4 text-blue-600" />
                 <span>Register</span>
-              </button>
+              </Link>
             </div>
 
             <button 
