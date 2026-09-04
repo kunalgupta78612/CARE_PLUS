@@ -1,49 +1,56 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Activity, ShieldCheck, Mail, Lock, User, Phone, UserPlus, CheckCircle2, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Activity, ShieldCheck, Mail, Lock, User, Phone, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
+import { usePatientRegisterMutation } from '../hooks/usePatientAuth';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const registerMutation = usePatientRegisterMutation();
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState('patient');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(true);
-  const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
+    setSuccessMsg('');
 
     if (password !== confirmPassword) {
       setErrorMsg('Passwords do not match. Please verify your input.');
       return;
     }
 
-    setLoading(true);
+    try {
+      // Execute TanStack Query Mutation connecting to Express REST API
+      const res = await registerMutation.mutateAsync({
+        name,
+        email,
+        phone,
+        password,
+      });
 
-    setTimeout(() => {
-      setLoading(false);
-      setSuccessMsg(`Account created successfully for ${name}! Redirecting to Login...`);
+      setSuccessMsg(`Account created for ${res.patient.name}! JWT token issued.`);
       setTimeout(() => {
-        navigate('/login');
-      }, 1200);
-    }, 900);
+        navigate('/patient-dashboard');
+      }, 1100);
+    } catch (err) {
+      setErrorMsg(err.message || 'Registration failed');
+    }
   };
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-50">
       <div className="max-w-4xl w-full bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden grid grid-cols-1 lg:grid-cols-12">
         
-        {/* Left Branding Side Banner */}
+        {/* Left Banner */}
         <div className="lg:col-span-5 bg-gradient-to-br from-blue-950 via-slate-900 to-teal-950 p-8 sm:p-10 text-white flex flex-col justify-between relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
           <div className="space-y-6 relative z-10">
             <Link to="/" className="inline-flex items-center space-x-3 group">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-teal-500 flex items-center justify-center text-white shadow-lg">
@@ -54,13 +61,13 @@ const RegisterPage = () => {
 
             <div className="space-y-2 pt-4">
               <span className="text-[11px] font-extrabold uppercase tracking-widest text-teal-400 bg-teal-950/80 border border-teal-800 px-3 py-1 rounded-full">
-                Join CarePlus Health
+                Node.js Backend Registration
               </span>
               <h2 className="text-2xl sm:text-3xl font-extrabold leading-tight">
-                Create Your Digital Patient & Staff Account
+                Create Patient Account
               </h2>
               <p className="text-slate-300 text-xs leading-relaxed">
-                Register to manage online doctor appointments, access electronic health records (EHR), and receive instant prescription updates.
+                Registers new patient record in Express backend API with bcryptjs password hashing and JWT token issuance.
               </p>
             </div>
           </div>
@@ -68,21 +75,18 @@ const RegisterPage = () => {
           <div className="mt-8 pt-6 border-t border-slate-800 space-y-3 relative z-10">
             <div className="flex items-center space-x-2 text-teal-400 text-xs font-bold">
               <ShieldCheck className="w-4 h-4" />
-              <span>Instant Verification & Multi-Role Support</span>
+              <span>JWT Authentication & Authorization Active</span>
             </div>
-            <p className="text-[11px] text-slate-400">
-              Select your role during registration: Patient, Doctor, Receptionist, or Administrator.
-            </p>
           </div>
         </div>
 
-        {/* Right Form Area */}
+        {/* Right Form */}
         <div className="lg:col-span-7 p-8 sm:p-10 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-2xl font-extrabold text-slate-900">Create New Account</h3>
-                <p className="text-xs text-slate-500 mt-1">Enter your profile details to register on CarePlus HMS</p>
+                <h3 className="text-2xl font-extrabold text-slate-900">Create Patient Account</h3>
+                <p className="text-xs text-slate-500 mt-1">Enter your details to register on CarePlus HMS</p>
               </div>
               <Link 
                 to="/login" 
@@ -92,10 +96,10 @@ const RegisterPage = () => {
               </Link>
             </div>
 
-            {/* Error / Success Banners */}
             {errorMsg && (
-              <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold">
-                {errorMsg}
+              <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center space-x-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errorMsg}</span>
               </div>
             )}
 
@@ -106,10 +110,7 @@ const RegisterPage = () => {
               </div>
             )}
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-3.5">
-              
-              {/* Full Name */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Full Name *</label>
                 <div className="relative">
@@ -117,7 +118,7 @@ const RegisterPage = () => {
                   <input 
                     type="text"
                     required
-                    placeholder="e.g. Jane Doe"
+                    placeholder="e.g. Alexander Wright"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
@@ -125,7 +126,6 @@ const RegisterPage = () => {
                 </div>
               </div>
 
-              {/* Email & Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Email Address *</label>
@@ -158,22 +158,6 @@ const RegisterPage = () => {
                 </div>
               </div>
 
-              {/* Account Role */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Select Account Type / Role</label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                >
-                  <option value="patient">🩺 Patient Account (Personal Medical Care)</option>
-                  <option value="doctor">👨‍⚕️ Doctor / Physician (Clinical Queue)</option>
-                  <option value="receptionist">📋 Receptionist / Staff (OPD Tokens & Beds)</option>
-                  <option value="admin">👑 System Administrator (Management Portal)</option>
-                </select>
-              </div>
-
-              {/* Password & Confirm Password */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Password *</label>
@@ -206,7 +190,6 @@ const RegisterPage = () => {
                 </div>
               </div>
 
-              {/* Terms checkbox */}
               <div className="flex items-center space-x-2 pt-1">
                 <input 
                   type="checkbox"
@@ -216,21 +199,20 @@ const RegisterPage = () => {
                   className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
                 />
                 <label htmlFor="terms" className="text-xs text-slate-600 cursor-pointer">
-                  I agree to the <a href="#" onClick={(e) => e.preventDefault()} className="text-blue-600 font-bold hover:underline">Terms of Care</a> and <a href="#" onClick={(e) => e.preventDefault()} className="text-blue-600 font-bold hover:underline">Privacy Policy</a>.
+                  I agree to the CarePlus Terms of Service and Privacy Policy.
                 </label>
               </div>
 
-              {/* Submit Button */}
               <button
                 type="submit"
-                disabled={loading || !agreed}
+                disabled={registerMutation.isPending || !agreed}
                 className="w-full py-3.5 mt-2 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-blue-600 to-teal-600 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/35 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
               >
-                {loading ? (
-                  <span>Registering Account...</span>
+                {registerMutation.isPending ? (
+                  <span>Registering via Backend...</span>
                 ) : (
                   <>
-                    <span>Complete Registration</span>
+                    <span>Register Patient Account</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -240,7 +222,7 @@ const RegisterPage = () => {
           </div>
 
           <div className="mt-6 pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
-            Already have a CarePlus account?{' '}
+            Already registered?{' '}
             <Link to="/login" className="font-bold text-blue-600 hover:underline">
               Sign In Here
             </Link>
