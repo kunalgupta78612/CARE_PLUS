@@ -15,12 +15,15 @@ import {
 } from 'lucide-react';
 import { departments, topDoctors } from '../data/hmsData';
 import { usePatientProfileQuery } from '../hooks/usePatientAuth';
+import { useCreateAppointmentMutation } from '../hooks/useAppointments';
 
 const BookAppointmentPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
   const { data: profileData } = usePatientProfileQuery();
+  const createAptMutation = useCreateAppointmentMutation();
+
   const storedUserJson = localStorage.getItem('careplus_patient_user');
   const storedUser = storedUserJson ? JSON.parse(storedUserJson) : null;
 
@@ -53,37 +56,37 @@ const BookAppointmentPage = () => {
     }
   }, [currentPatient.name]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
 
-    setTimeout(() => {
-      setSubmitting(false);
-      const tokenNumber = 'OPD-' + Math.floor(1000 + Math.random() * 9000);
-      const newBooking = {
-        id: tokenNumber,
-        tokenNumber,
+    try {
+      const res = await createAptMutation.mutateAsync({
         patientName: patientName || currentPatient.name || 'Patient',
+        patientEmail: currentPatient.email || 'patient@careplus-hms.com',
+        doctor,
+        department,
+        date,
+        timeSlot,
+        type: consultationType,
+        reason
+      });
+
+      setSubmitting(false);
+      setConfirmedBooking(res.appointment || {
+        patientName: patientName || currentPatient.name,
         patientId: currentPatient.patientId,
         department,
         doctor,
         date,
         timeSlot,
         consultationType,
-        status: 'Confirmed',
-        createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-
-      // Persist to local storage for real-time sync with Receptionist Dashboard
-      try {
-        const stored = JSON.parse(localStorage.getItem('careplus_appointments') || '[]');
-        localStorage.setItem('careplus_appointments', JSON.stringify([newBooking, ...stored]));
-      } catch (err) {
-        console.error(err);
-      }
-
-      setConfirmedBooking(newBooking);
-    }, 600);
+        tokenNumber: 'OPD-' + Math.floor(1000 + Math.random() * 9000)
+      });
+    } catch (err) {
+      setSubmitting(false);
+      console.error(err);
+    }
   };
 
   return (

@@ -23,6 +23,7 @@ import {
   Zap,
   RefreshCw
 } from 'lucide-react';
+import { updateAppointmentStatusApi } from '../api/appointmentApi';
 import { logoutPatientApi } from '../api/authApi';
 
 const DEFAULT_APPOINTMENTS = [
@@ -247,14 +248,21 @@ const ReceptionistDashboard = () => {
   };
 
   // Immediate Real-Time Status Change Handler (No Refresh Needed!)
-  const handleStatusChange = (aptTarget, newStatus) => {
+  const handleStatusChange = async (aptTarget, newStatus) => {
+    const targetId = aptTarget._id || aptTarget.id || aptTarget.tokenNumber;
     const updated = appointments.map((a) => {
-      if (a.id === aptTarget.id || a.tokenNumber === aptTarget.tokenNumber) {
+      if (a.id === aptTarget.id || a._id === aptTarget._id || a.tokenNumber === aptTarget.tokenNumber) {
         return { ...a, status: newStatus };
       }
       return a;
     });
     saveAppointments(updated);
+
+    try {
+      await updateAppointmentStatusApi({ id: targetId, status: newStatus });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // Reschedule Submission

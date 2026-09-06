@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDB } from './config/db.js';
 import patientRoutes from './routes/patientRoutes.js';
+import appointmentRoutes from './routes/appointmentRoutes.js';
 import { errorHandler } from './middleware/errorMiddleware.js';
 
 // Load Environment Variables
@@ -33,6 +34,7 @@ app.get('/api/health', (req, res) => {
 
 // API Routes
 app.use('/api/patient', patientRoutes);
+app.use('/api/appointments', appointmentRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

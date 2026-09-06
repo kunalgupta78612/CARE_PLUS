@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 
 import { usePatientProfileQuery } from '../hooks/usePatientAuth';
+import { usePatientAppointmentsQuery, useCreateAppointmentMutation } from '../hooks/useAppointments';
 import { logoutPatientApi } from '../api/authApi';
 
 const mockPatientProfile = {
@@ -162,6 +163,19 @@ const PatientDashboard = () => {
   const navigate = useNavigate();
   const { data: profileData } = usePatientProfileQuery();
 
+  // REAL BACKEND DATA FETCHING VIA TANSTACK QUERY
+  const { data: aptData } = usePatientAppointmentsQuery();
+  const createAptMutation = useCreateAppointmentMutation();
+
+  const statistics = aptData?.statistics || {
+    total: 0,
+    upcoming: 0,
+    completed: 0,
+    cancelled: 0,
+  };
+
+  const appointmentsList = aptData?.appointments || [];
+
   const storedUserJson = localStorage.getItem('careplus_patient_user');
   const storedUser = storedUserJson ? JSON.parse(storedUserJson) : null;
 
@@ -186,7 +200,6 @@ const PatientDashboard = () => {
   const [viewReportModal, setViewReportModal] = useState(null);
   const [viewInvoiceModal, setViewInvoiceModal] = useState(null);
 
-  const [appointments, setAppointments] = useState(initialAppointments);
   const [notifications, setNotifications] = useState(mockNotifications);
 
   // New Booking Form State
@@ -198,25 +211,27 @@ const PatientDashboard = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const handleBookAppointment = (e) => {
+  const handleBookAppointment = async (e) => {
     e.preventDefault();
-    const newApt = {
-      id: 'APT-' + Math.floor(1000 + Math.random() * 9000),
-      doctor: newDoc,
-      specialty: 'Specialist Physician',
-      department: newDept,
-      date: newDate,
-      time: newTime,
-      status: 'Confirmed',
-      type: 'OPD Consultation',
-      room: 'Main Clinic Block'
-    };
-    setAppointments([newApt, ...appointments]);
-    setBookingSuccess(true);
-    setTimeout(() => {
-      setBookingSuccess(false);
-      setBookingModalOpen(false);
-    }, 1200);
+    try {
+      await createAptMutation.mutateAsync({
+        patientName: currentPatient.name,
+        patientEmail: currentPatient.email,
+        doctor: newDoc,
+        department: newDept,
+        date: newDate,
+        timeSlot: newTime,
+        type: 'OPD Consultation'
+      });
+
+      setBookingSuccess(true);
+      setTimeout(() => {
+        setBookingSuccess(false);
+        setBookingModalOpen(false);
+      }, 1200);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleLogout = async () => {
@@ -424,50 +439,50 @@ const PatientDashboard = () => {
           {activeTab === 'overview' && (
             <div className="space-y-6 animate-in fade-in duration-200">
               
-              {/* Quick Stats Cards */}
+              {/* Quick Stats Cards using REAL BACKEND STATISTICS */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 
-                <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm flex items-center justify-between">
+                <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm flex items-center justify-between hover:border-blue-300 transition-all">
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Upcoming Appointments</p>
-                    <h3 className="text-2xl font-extrabold text-slate-900 mt-1">2</h3>
-                    <p className="text-[11px] text-blue-600 font-semibold mt-1">Next: Sept 6, 10:30 AM</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Appointments</p>
+                    <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{statistics.total}</h3>
+                    <p className="text-[11px] text-blue-600 font-semibold mt-1">Real-time DB Sync</p>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <Activity className="w-6 h-6 stroke-[2.5]" />
+                  </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm flex items-center justify-between hover:border-emerald-300 transition-all">
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Upcoming Appointments</p>
+                    <h3 className="text-2xl font-extrabold text-emerald-600 mt-1">{statistics.upcoming}</h3>
+                    <p className="text-[11px] text-emerald-600 font-semibold mt-1">Active Consultations</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                     <Calendar className="w-6 h-6" />
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm flex items-center justify-between">
+                <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm flex items-center justify-between hover:border-purple-300 transition-all">
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Active Prescriptions</p>
-                    <h3 className="text-2xl font-extrabold text-slate-900 mt-1">2</h3>
-                    <p className="text-[11px] text-emerald-600 font-semibold mt-1">Atorvastatin & Aspirin</p>
-                  </div>
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                    <Pill className="w-6 h-6" />
-                  </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Lab Reports</p>
-                    <h3 className="text-2xl font-extrabold text-slate-900 mt-1">3</h3>
-                    <p className="text-[11px] text-purple-600 font-semibold mt-1">CBC Panel Ready</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Completed Appointments</p>
+                    <h3 className="text-2xl font-extrabold text-purple-600 mt-1">{statistics.completed}</h3>
+                    <p className="text-[11px] text-purple-600 font-semibold mt-1">Attended Care</p>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                    <FileText className="w-6 h-6" />
+                    <CheckCircle2 className="w-6 h-6" />
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm flex items-center justify-between">
+                <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm flex items-center justify-between hover:border-rose-300 transition-all">
                   <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Balance Due</p>
-                    <h3 className="text-2xl font-extrabold text-slate-900 mt-1">$0.00</h3>
-                    <p className="text-[11px] text-emerald-600 font-semibold mt-1">All Invoices Paid</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Cancelled Appointments</p>
+                    <h3 className="text-2xl font-extrabold text-rose-600 mt-1">{statistics.cancelled}</h3>
+                    <p className="text-[11px] text-rose-600 font-semibold mt-1">Cancelled Status</p>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center">
-                    <DollarSign className="w-6 h-6" />
+                  <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                    <AlertCircle className="w-6 h-6" />
                   </div>
                 </div>
 
@@ -586,37 +601,49 @@ const PatientDashboard = () => {
                 </button>
               </div>
 
-              {/* Appointments List */}
+              {/* Appointments List using REAL BACKEND DATA */}
               <div className="space-y-4">
-                {appointments.map((apt) => (
-                  <div key={apt.id} className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:border-blue-300 transition-all">
-                    <div className="flex items-start space-x-4">
-                      <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-1">
-                        <Calendar className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <h4 className="font-bold text-slate-900 text-base">{apt.doctor}</h4>
-                          <span className={`px-2.5 py-0.5 text-[10px] font-extrabold rounded-full uppercase ${
-                            apt.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
-                          }`}>
-                            {apt.status}
-                          </span>
+                {appointmentsList.length > 0 ? (
+                  appointmentsList.map((apt) => (
+                    <div key={apt._id || apt.id || apt.tokenNumber} className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:border-blue-300 transition-all">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-1 font-extrabold text-sm">
+                          <Calendar className="w-6 h-6" />
                         </div>
-                        <p className="text-xs font-semibold text-blue-600 mt-0.5">{apt.department}</p>
-                        <p className="text-xs text-slate-500 mt-1">{apt.type} • {apt.room}</p>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h4 className="font-bold text-slate-900 text-base">{apt.doctor}</h4>
+                            <span className={`px-2.5 py-0.5 text-[10px] font-extrabold rounded-full uppercase ${
+                              apt.status === 'Completed' 
+                                ? 'bg-purple-100 text-purple-800' 
+                                : apt.status === 'Cancelled'
+                                ? 'bg-rose-100 text-rose-800'
+                                : apt.status === 'In Consultation'
+                                ? 'bg-blue-100 text-blue-800 animate-pulse'
+                                : 'bg-emerald-100 text-emerald-800'
+                            }`}>
+                              {apt.status}
+                            </span>
+                          </div>
+                          <p className="text-xs font-semibold text-blue-600 mt-0.5">{apt.department}</p>
+                          <p className="text-xs text-slate-500 mt-1">{apt.type || 'OPD Consultation'} • Token #{apt.tokenNumber || apt.id}</p>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center space-x-6 w-full md:w-auto justify-between md:justify-end pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
-                      <div className="text-left md:text-right text-xs">
-                        <p className="font-bold text-slate-900">{apt.date}</p>
-                        <p className="text-slate-500">{apt.time}</p>
+                      <div className="flex items-center space-x-6 w-full md:w-auto justify-between md:justify-end pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+                        <div className="text-left md:text-right text-xs">
+                          <p className="font-bold text-slate-900">{apt.date}</p>
+                          <p className="text-amber-600 font-bold">{apt.timeSlot || apt.time}</p>
+                        </div>
+                        <span className="text-xs font-bold text-slate-400">Token #{apt.tokenNumber || apt.id}</span>
                       </div>
-                      <span className="text-xs font-bold text-slate-400">Token #{apt.id}</span>
                     </div>
+                  ))
+                ) : (
+                  <div className="bg-white p-8 rounded-3xl border border-slate-200 text-center text-slate-500 text-xs">
+                    No appointments booked yet. Click "Book New Appointment" to schedule your consultation.
                   </div>
-                ))}
+                )}
               </div>
 
             </div>
