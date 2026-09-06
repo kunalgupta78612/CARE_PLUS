@@ -9,6 +9,7 @@ import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ReceptionistDashboard from './pages/ReceptionistDashboard';
+import BookAppointmentPage from './pages/BookAppointmentPage';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { PublicRoute } from './components/common/PublicRoute';
 
@@ -32,6 +33,11 @@ function App() {
             <Route element={<PublicRoute />}>
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />
+            </Route>
+
+            {/* Protected Appointment Booking Route */}
+            <Route element={<ProtectedRoute allowedRoles={['patient', 'doctor', 'admin', 'receptionist']} />}>
+              <Route path="book-appointment" element={<BookAppointmentPage />} />
             </Route>
           </Route>
 

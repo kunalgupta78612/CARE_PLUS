@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Activity, ShieldCheck, Mail, Lock, User, Phone, CheckCircle2, AlertCircle, ArrowRight, HeartPulse, Calendar } from 'lucide-react';
 import { usePatientRegisterMutation } from '../hooks/usePatientAuth';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const redirectTarget = searchParams.get('redirect') || location.state?.from;
+
   const registerMutation = usePatientRegisterMutation();
 
   const [name, setName] = useState('');
@@ -46,15 +50,17 @@ const RegisterPage = () => {
       });
 
       const userRole = res.patient?.role || role;
-      setSuccessMsg(`Account created successfully for ${res.patient?.name || name}! Redirecting to ${userRole.toUpperCase()} Dashboard...`);
+      setSuccessMsg(`Account created successfully for ${res.patient?.name || name}! Redirecting...`);
       
       setTimeout(() => {
-        if (userRole === 'patient') navigate('/patient-dashboard');
+        if (redirectTarget) {
+          navigate(decodeURIComponent(redirectTarget));
+        } else if (userRole === 'patient') navigate('/patient-dashboard');
         else if (userRole === 'doctor') navigate('/doctor-dashboard');
         else if (userRole === 'admin') navigate('/admin-dashboard');
         else if (userRole === 'receptionist') navigate('/receptionist-dashboard');
         else navigate('/patient-dashboard');
-      }, 1100);
+      }, 1000);
     } catch (err) {
       setErrorMsg(err.message || 'Registration failed. Please try again.');
     }

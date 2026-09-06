@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Activity, ShieldCheck, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { Activity, ShieldCheck, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle, Calendar } from 'lucide-react';
 import { usePatientLoginMutation } from '../hooks/usePatientAuth';
 
 const DEMO_ACCOUNTS = [
@@ -12,6 +12,10 @@ const DEMO_ACCOUNTS = [
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const redirectTarget = searchParams.get('redirect') || location.state?.from;
+
   const loginMutation = usePatientLoginMutation();
 
   const [email, setEmail] = useState('');
@@ -38,12 +42,14 @@ const LoginPage = () => {
       
       setSuccessMsg(`Welcome back, ${res.patient.name}! Authenticated with JWT token.`);
       setTimeout(() => {
-        if (selectedRole === 'patient' || res.patient.role === 'patient') {
+        if (redirectTarget) {
+          navigate(decodeURIComponent(redirectTarget));
+        } else if (selectedRole === 'patient' || res.patient.role === 'patient') {
           navigate('/patient-dashboard');
         } else {
           navigate('/');
         }
-      }, 1000);
+      }, 800);
     } catch (err) {
       setErrorMsg(err.message || 'Invalid email or password');
     }
@@ -99,6 +105,18 @@ const LoginPage = () => {
                 Register
               </Link>
             </div>
+
+            {redirectTarget && (
+              <div className="mb-5 p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-semibold flex items-center space-x-3 shadow-sm">
+                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 font-bold">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900">Sign in to complete appointment booking</p>
+                  <p className="text-[11px] text-blue-700">Once logged in, you will be automatically redirected to continue booking.</p>
+                </div>
+              </div>
+            )}
 
             {errorMsg && (
               <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center space-x-2">

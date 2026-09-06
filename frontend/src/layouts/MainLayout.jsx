@@ -1,19 +1,29 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { QuickBookingModal } from '../components/landing/QuickBookingModal';
 import { AuthModal } from '../components/auth/AuthModal';
+import { getAuthToken } from '../api/authApi';
 
 const MainLayout = () => {
+  const navigate = useNavigate();
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedDoctor, setSelectedDoctor] = useState('');
 
   const handleOpenBooking = (dept = '', doctor = '') => {
-    setSelectedDept(dept);
-    setSelectedDoctor(doctor);
-    setBookingModalOpen(true);
+    const token = getAuthToken();
+    const storedUserJson = localStorage.getItem('careplus_patient_user');
+    const user = storedUserJson ? JSON.parse(storedUserJson) : null;
+
+    if (token && user) {
+      // User is already logged in -> Continue directly to appointment booking process
+      navigate('/book-appointment', { state: { dept, doctor } });
+    } else {
+      // User is not logged in -> Redirect to login page with return URL
+      navigate('/login?redirect=/book-appointment', { state: { dept, doctor } });
+    }
   };
 
   const handleOpenAuth = () => {

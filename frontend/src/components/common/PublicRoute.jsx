@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { getAuthToken } from '../../api/authApi';
 
 export const getDashboardForRole = (role) => {
@@ -18,14 +18,18 @@ export const getDashboardForRole = (role) => {
 };
 
 export const PublicRoute = () => {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const redirectTarget = searchParams.get('redirect');
+
   const token = getAuthToken();
   const storedUserJson = localStorage.getItem('careplus_patient_user');
   const user = storedUserJson ? JSON.parse(storedUserJson) : null;
 
-  // If user is already logged in, block access to Login/Register and redirect to their role dashboard
+  // If user is already logged in, block access to Login/Register and redirect to target or role dashboard
   if (token && user) {
-    const dashboardPath = getDashboardForRole(user.role);
-    return <Navigate to={dashboardPath} replace />;
+    const targetPath = redirectTarget ? decodeURIComponent(redirectTarget) : getDashboardForRole(user.role);
+    return <Navigate to={targetPath} replace />;
   }
 
   return <Outlet />;

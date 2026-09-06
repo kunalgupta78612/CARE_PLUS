@@ -1,16 +1,18 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { ShieldAlert, ArrowLeft, Lock } from 'lucide-react';
 import { getAuthToken } from '../../api/authApi';
 
 export const ProtectedRoute = ({ allowedRoles = [] }) => {
+  const location = useLocation();
   const token = getAuthToken();
   const storedUserJson = localStorage.getItem('careplus_patient_user');
   const user = storedUserJson ? JSON.parse(storedUserJson) : null;
 
   // 1. Unauthenticated check
   if (!token || !user) {
-    return <Navigate to="/login" replace />;
+    const redirectUrl = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?redirect=${redirectUrl}`} replace />;
   }
 
   // 2. Role Authorization check
