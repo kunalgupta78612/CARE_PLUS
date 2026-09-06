@@ -8,16 +8,17 @@ import { errorHandler } from './middleware/errorMiddleware.js';
 // Load Environment Variables
 dotenv.config();
 
-// Connect MongoDB Database
+// Connect Database
 connectDB();
 
 const app = express();
 
-// Middleware
+// Permissive CORS for local development
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: true,
   credentials: true,
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -33,12 +34,25 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/patient', patientRoutes);
 
-// Error Handling Middleware
+// Global Error Handler
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const DEFAULT_PORT = parseInt(process.env.PORT || '5000', 10);
 
-app.listen(PORT, () => {
-  console.log(`🚀 CarePlus HMS Backend Server running on http://localhost:${PORT}`);
-  console.log(`🔒 Patient Auth Endpoint: http://localhost:${PORT}/api/patient`);
-});
+const startServer = (port) => {
+  const server = app.listen(port, '0.0.0.0', () => {
+    console.log(`🚀 CarePlus HMS Backend Server listening on http://localhost:${port}`);
+    console.log(`🔒 Patient Auth Endpoint: http://localhost:${port}/api/patient`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`⚠️ Port ${port} is occupied. Trying port ${port + 1}...`);
+      startServer(port + 1);
+    } else {
+      console.error('Server error:', err);
+    }
+  });
+};
+
+startServer(DEFAULT_PORT);
