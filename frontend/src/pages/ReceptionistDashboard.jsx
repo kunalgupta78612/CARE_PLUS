@@ -23,8 +23,15 @@ import {
   Zap,
   RefreshCw
 } from 'lucide-react';
-import { updateAppointmentStatusApi } from '../api/appointmentApi';
-import { logoutPatientApi } from '../api/authApi';
+import apiService from '../api/apiService';
+import {
+  useAllAppointmentsQuery,
+  useUpdateAppointmentStatusMutation,
+  useInvoicesQuery,
+  useCreateInvoiceMutation,
+  useUpdateInvoiceStatusMutation,
+  useCreateAppointmentMutation
+} from '../hooks/useApiQueries';
 
 const DEFAULT_APPOINTMENTS = [
   {
@@ -136,8 +143,6 @@ const ReceptionistDashboard = () => {
   const receptionistEmail = user?.email || 'receptionist@careplus-hms.com';
 
   const [activeTab, setActiveTab] = useState('queue'); // 'queue', 'doctorQueue', 'billing', 'walkin', 'profile'
-  const [appointments, setAppointments] = useState([]);
-  const [invoices, setInvoices] = useState([]);
 
   // Filtering & Search states
   const [searchQuery, setSearchQuery] = useState('');
@@ -163,179 +168,104 @@ const ReceptionistDashboard = () => {
   const [walkinDoc, setWalkinDoc] = useState('Dr. Sarah Jenkins, MD');
   const [generatedToken, setGeneratedToken] = useState(null);
 
-  // Initial Load from LocalStorage
-  const loadStoredData = () => {
-    try {
-      const storedApts = JSON.parse(localStorage.getItem('careplus_appointments') || '[]');
-      if (storedApts.length > 0) {
-        const combined = [...storedApts];
-        DEFAULT_APPOINTMENTS.forEach((def) => {
-          if (!combined.some((a) => a.id === def.id || a.tokenNumber === def.tokenNumber)) {
-            combined.push(def);
-          }
-        });
-        setAppointments(combined);
-      } else {
-        setAppointments(DEFAULT_APPOINTMENTS);
-        localStorage.setItem('careplus_appointments', JSON.stringify(DEFAULT_APPOINTMENTS));
-      }
+  // TanStack Query Hooks for Real-Time Backend Sync & Cache Management
+  const { data: fetchedAppointments } = useAllAppointmentsQuery();
+  const { data: fetchedInvoices } = useInvoicesQuery();
+  const updateStatusMutation = useUpdateAppointmentStatusMutation();
+  const createInvoiceMutation = useCreateInvoiceMutation();
+  const updateInvoiceStatusMutation = useUpdateInvoiceStatusMutation();
+  const createAppointmentMutation = useCreateAppointmentMutation();
 
-      const storedInvoices = JSON.parse(localStorage.getItem('careplus_invoices') || '[]');
-      if (storedInvoices.length > 0) {
-        setInvoices(storedInvoices);
-      } else {
-        setInvoices(DEFAULT_INVOICES);
-        localStorage.setItem('careplus_invoices', JSON.stringify(DEFAULT_INVOICES));
-      }
-    } catch (err) {
-      setAppointments(DEFAULT_APPOINTMENTS);
-      setInvoices(DEFAULT_INVOICES);
-    }
-  };
-
-  useEffect(() => {
-    loadStoredData();
-
-    // REAL-TIME AUTO SYNC LISTENER across tabs/windows or new bookings
-    const handleStorageChange = () => {
-      try {
-        const storedApts = JSON.parse(localStorage.getItem('careplus_appointments') || '[]');
-        if (storedApts.length > 0) {
-          setAppointments(storedApts);
-        }
-      } catch (e) {}
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    const interval = setInterval(() => {
-      try {
-        const storedApts = JSON.parse(localStorage.getItem('careplus_appointments') || '[]');
-        if (storedApts.length > 0 && storedApts.length !== appointments.length) {
-          setAppointments(storedApts);
-        }
-      } catch (e) {}
-    }, 1500);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, []);
-
-  // Save changes to localStorage
-  const saveAppointments = (updatedApts) => {
-    setAppointments(updatedApts);
-    try {
-      localStorage.setItem('careplus_appointments', JSON.stringify(updatedApts));
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const saveInvoices = (updatedInvoices) => {
-    setInvoices(updatedInvoices);
-    try {
-      localStorage.setItem('careplus_invoices', JSON.stringify(updatedInvoices));
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const appointments = fetchedAppointments && fetchedAppointments.length > 0 ? fetchedAppointments : DEFAULT_APPOINTMENTS;
+  const invoices = fetchedInvoices && fetchedInvoices.length > 0 ? fetchedInvoices : DEFAULT_INVOICES;
 
   // Logout Handler
   const handleLogout = async () => {
-    await logoutPatientApi();
+    await apiService.logoutUser();
     navigate('/login');
   };
 
   // Immediate Real-Time Status Change Handler (No Refresh Needed!)
   const handleStatusChange = async (aptTarget, newStatus) => {
     const targetId = aptTarget._id || aptTarget.id || aptTarget.tokenNumber;
-    const updated = appointments.map((a) => {
-      if (a.id === aptTarget.id || a._id === aptTarget._id || a.tokenNumber === aptTarget.tokenNumber) {
-        return { ...a, status: newStatus };
-      }
-      return a;
-    });
-    saveAppointments(updated);
+    try {
+      await updateStatusMutation.mutateAsync({ id: targetId, status: newStatus });
+    } catch (err) {
+      console.error('Status update failed:', err);
+    }
+  };
+
+  // Reschedule Submission
+  const handleSaveReschedule = async (e) => {
+    e.preventDefault();
+    if (!editingApt) return;
+    const targetId = editingApt._id || editingApt.id || editingApt.tokenNumber;
 
     try {
-      await updateAppointmentStatusApi({ id: targetId, status: newStatus });
+      await updateStatusMutation.mutateAsync({
+        id: targetId,
+        status: 'Rescheduled',
+        date: editDate,
+        timeSlot: editTime
+      });
+      setEditingApt(null);
     } catch (err) {
       console.error(err);
     }
   };
 
-  // Reschedule Submission
-  const handleSaveReschedule = (e) => {
-    e.preventDefault();
-    if (!editingApt) return;
-
-    const updated = appointments.map((a) => {
-      if (a.id === editingApt.id || a.tokenNumber === editingApt.tokenNumber) {
-        return {
-          ...a,
-          date: editDate,
-          timeSlot: editTime
-        };
-      }
-      return a;
-    });
-
-    saveAppointments(updated);
-    setEditingApt(null);
-  };
-
   // Create Bill Handler
-  const handleCreateBill = (e) => {
+  const handleCreateBill = async (e) => {
     e.preventDefault();
-    const newInv = {
-      id: 'INV-' + Math.floor(9000 + Math.random() * 1000),
-      patientName: newBillPatient,
-      patientId: 'PT-' + Math.floor(1000 + Math.random() * 9000),
-      description: newBillDesc,
-      amount: parseFloat(newBillAmount) || 100.00,
-      status: newBillStatus,
-      method: newBillMethod,
-      date: new Date().toISOString().split('T')[0]
-    };
-
-    saveInvoices([newInv, ...invoices]);
-    setBillModalOpen(false);
-    setNewBillPatient('');
-    setNewBillDesc('');
-    setNewBillAmount('');
+    try {
+      await createInvoiceMutation.mutateAsync({
+        patientName: newBillPatient,
+        patientId: 'PT-' + Math.floor(1000 + Math.random() * 9000),
+        description: newBillDesc,
+        amount: parseFloat(newBillAmount) || 100.00,
+        status: newBillStatus,
+        method: newBillMethod
+      });
+      setBillModalOpen(false);
+      setNewBillPatient('');
+      setNewBillDesc('');
+      setNewBillAmount('');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleMarkPaid = (invId) => {
-    const updated = invoices.map((inv) => {
-      if (inv.id === invId) {
-        return { ...inv, status: 'Paid', method: 'Cash / Card' };
-      }
-      return inv;
-    });
-    saveInvoices(updated);
+  const handleMarkPaid = async (invId) => {
+    try {
+      await updateInvoiceStatusMutation.mutateAsync({
+        id: invId,
+        status: 'Paid',
+        method: 'Cash / Card'
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // Walk-in Token Generator
-  const handleGenerateWalkinToken = (e) => {
+  const handleGenerateWalkinToken = async (e) => {
     e.preventDefault();
     const newToken = 'OPD-' + Math.floor(1000 + Math.random() * 9000);
-    const newApt = {
-      id: newToken,
-      tokenNumber: newToken,
-      patientName: walkinName || 'Walk-in Patient',
-      patientId: 'PT-' + Math.floor(1000 + Math.random() * 9000),
-      doctor: walkinDoc,
-      department: walkinDept,
-      date: new Date().toISOString().split('T')[0],
-      timeSlot: '10:00 AM',
-      status: 'Confirmed',
-      consultationType: 'Walk-in OPD Triage'
-    };
-
-    saveAppointments([newApt, ...appointments]);
-    setGeneratedToken(newApt);
-    setWalkinName('');
+    try {
+      const res = await createAppointmentMutation.mutateAsync({
+        patientName: walkinName || 'Walk-in Patient',
+        doctor: walkinDoc,
+        department: walkinDept,
+        date: new Date().toISOString().split('T')[0],
+        timeSlot: '10:00 AM',
+        status: 'Confirmed',
+        type: 'Walk-in OPD Triage'
+      });
+      setGeneratedToken(res.appointment || { tokenNumber: newToken, patientName: walkinName });
+      setWalkinName('');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // Organize Queue by Doctor and Time

@@ -28,9 +28,12 @@ import {
   DollarSign
 } from 'lucide-react';
 
-import { usePatientProfileQuery } from '../hooks/usePatientAuth';
-import { usePatientAppointmentsQuery, useCreateAppointmentMutation } from '../hooks/useAppointments';
-import { logoutPatientApi } from '../api/authApi';
+import apiService from '../api/apiService';
+import {
+  usePatientProfileQuery,
+  usePatientAppointmentsQuery,
+  useCreateAppointmentMutation
+} from '../hooks/useApiQueries';
 
 const mockPatientProfile = {
   id: 'PT-9801',
@@ -235,7 +238,7 @@ const PatientDashboard = () => {
   };
 
   const handleLogout = async () => {
-    await logoutPatientApi();
+    await apiService.logoutUser();
     navigate('/login');
   };
 
