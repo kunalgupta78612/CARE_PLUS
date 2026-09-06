@@ -20,7 +20,8 @@ import {
   X, 
   ChevronRight,
   AlertCircle,
-  Printer
+  Zap,
+  RefreshCw
 } from 'lucide-react';
 import { logoutPatientApi } from '../api/authApi';
 
@@ -34,7 +35,7 @@ const DEFAULT_APPOINTMENTS = [
     department: 'Cardiology & Heart Care',
     date: '2026-09-06',
     timeSlot: '10:30 AM',
-    status: 'Confirmed',
+    status: 'In Consultation',
     consultationType: 'Cardiology OPD'
   },
   {
@@ -116,6 +117,14 @@ const DOCTOR_LIST = [
   'Dr. Marcus Vance, MD'
 ];
 
+const STATUS_OPTIONS = [
+  'Confirmed',
+  'In Consultation',
+  'Completed',
+  'Rescheduled',
+  'Cancelled'
+];
+
 const ReceptionistDashboard = () => {
   const navigate = useNavigate();
 
@@ -125,7 +134,7 @@ const ReceptionistDashboard = () => {
   const receptionistName = user?.name || 'Sarah Davis';
   const receptionistEmail = user?.email || 'receptionist@careplus-hms.com';
 
-  const [activeTab, setActiveTab] = useState('appointments'); // 'appointments', 'doctorQueue', 'billing', 'walkin', 'profile'
+  const [activeTab, setActiveTab] = useState('queue'); // 'queue', 'doctorQueue', 'billing', 'walkin', 'profile'
   const [appointments, setAppointments] = useState([]);
   const [invoices, setInvoices] = useState([]);
 
@@ -134,11 +143,10 @@ const ReceptionistDashboard = () => {
   const [selectedDoctorFilter, setSelectedDoctorFilter] = useState('All Doctors');
   const [statusFilter, setStatusFilter] = useState('All');
 
-  // Reschedule / Edit Modal state
+  // Reschedule Modal state
   const [editingApt, setEditingApt] = useState(null);
   const [editDate, setEditDate] = useState('');
   const [editTime, setEditTime] = useState('');
-  const [editStatus, setEditStatus] = useState('');
 
   // Create Bill Modal state
   const [billModalOpen, setBillModalOpen] = useState(false);
@@ -154,12 +162,11 @@ const ReceptionistDashboard = () => {
   const [walkinDoc, setWalkinDoc] = useState('Dr. Sarah Jenkins, MD');
   const [generatedToken, setGeneratedToken] = useState(null);
 
-  // Initialize and Sync Appointments and Invoices with LocalStorage
-  useEffect(() => {
+  // Initial Load from LocalStorage
+  const loadStoredData = () => {
     try {
       const storedApts = JSON.parse(localStorage.getItem('careplus_appointments') || '[]');
       if (storedApts.length > 0) {
-        // Merge stored appointments with default mock appointments (avoiding duplicates)
         const combined = [...storedApts];
         DEFAULT_APPOINTMENTS.forEach((def) => {
           if (!combined.some((a) => a.id === def.id || a.tokenNumber === def.tokenNumber)) {
@@ -183,9 +190,38 @@ const ReceptionistDashboard = () => {
       setAppointments(DEFAULT_APPOINTMENTS);
       setInvoices(DEFAULT_INVOICES);
     }
+  };
+
+  useEffect(() => {
+    loadStoredData();
+
+    // REAL-TIME AUTO SYNC LISTENER across tabs/windows or new bookings
+    const handleStorageChange = () => {
+      try {
+        const storedApts = JSON.parse(localStorage.getItem('careplus_appointments') || '[]');
+        if (storedApts.length > 0) {
+          setAppointments(storedApts);
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    const interval = setInterval(() => {
+      try {
+        const storedApts = JSON.parse(localStorage.getItem('careplus_appointments') || '[]');
+        if (storedApts.length > 0 && storedApts.length !== appointments.length) {
+          setAppointments(storedApts);
+        }
+      } catch (e) {}
+    }, 1500);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
   }, []);
 
-  // Save changes to localStorage when appointments state mutates
+  // Save changes to localStorage
   const saveAppointments = (updatedApts) => {
     setAppointments(updatedApts);
     try {
@@ -195,7 +231,6 @@ const ReceptionistDashboard = () => {
     }
   };
 
-  // Save changes to localStorage when invoices state mutates
   const saveInvoices = (updatedInvoices) => {
     setInvoices(updatedInvoices);
     try {
@@ -211,7 +246,18 @@ const ReceptionistDashboard = () => {
     navigate('/login');
   };
 
-  // Handle Edit/Reschedule Submission
+  // Immediate Real-Time Status Change Handler (No Refresh Needed!)
+  const handleStatusChange = (aptTarget, newStatus) => {
+    const updated = appointments.map((a) => {
+      if (a.id === aptTarget.id || a.tokenNumber === aptTarget.tokenNumber) {
+        return { ...a, status: newStatus };
+      }
+      return a;
+    });
+    saveAppointments(updated);
+  };
+
+  // Reschedule Submission
   const handleSaveReschedule = (e) => {
     e.preventDefault();
     if (!editingApt) return;
@@ -221,8 +267,7 @@ const ReceptionistDashboard = () => {
         return {
           ...a,
           date: editDate,
-          timeSlot: editTime,
-          status: editStatus
+          timeSlot: editTime
         };
       }
       return a;
@@ -232,7 +277,7 @@ const ReceptionistDashboard = () => {
     setEditingApt(null);
   };
 
-  // Handle Create New Bill Submission
+  // Create Bill Handler
   const handleCreateBill = (e) => {
     e.preventDefault();
     const newInv = {
@@ -253,7 +298,6 @@ const ReceptionistDashboard = () => {
     setNewBillAmount('');
   };
 
-  // Handle Mark Invoice Paid
   const handleMarkPaid = (invId) => {
     const updated = invoices.map((inv) => {
       if (inv.id === invId) {
@@ -264,7 +308,7 @@ const ReceptionistDashboard = () => {
     saveInvoices(updated);
   };
 
-  // Handle Walk-in Token Generation
+  // Walk-in Token Generator
   const handleGenerateWalkinToken = (e) => {
     e.preventDefault();
     const newToken = 'OPD-' + Math.floor(1000 + Math.random() * 9000);
@@ -276,7 +320,7 @@ const ReceptionistDashboard = () => {
       doctor: walkinDoc,
       department: walkinDept,
       date: new Date().toISOString().split('T')[0],
-      timeSlot: 'Live Queue (Immediate)',
+      timeSlot: '10:00 AM',
       status: 'Confirmed',
       consultationType: 'Walk-in OPD Triage'
     };
@@ -286,21 +330,53 @@ const ReceptionistDashboard = () => {
     setWalkinName('');
   };
 
-  // Filtered Appointments
-  const filteredAppointments = appointments.filter((apt) => {
-    const matchesSearch = 
-      apt.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      apt.doctor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (apt.tokenNumber && apt.tokenNumber.toLowerCase().includes(searchQuery.toLowerCase()));
+  // Organize Queue by Doctor and Time
+  const getOrganizedQueue = () => {
+    let list = [...appointments];
 
-    const matchesDoctor = 
-      selectedDoctorFilter === 'All Doctors' || apt.doctor === selectedDoctorFilter;
+    // Filter by search
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter((a) =>
+        a.patientName.toLowerCase().includes(q) ||
+        a.doctor.toLowerCase().includes(q) ||
+        (a.tokenNumber && a.tokenNumber.toLowerCase().includes(q))
+      );
+    }
 
-    const matchesStatus = 
-      statusFilter === 'All' || apt.status.toLowerCase() === statusFilter.toLowerCase();
+    // Filter by doctor
+    if (selectedDoctorFilter !== 'All Doctors') {
+      list = list.filter((a) => a.doctor === selectedDoctorFilter);
+    }
 
-    return matchesSearch && matchesDoctor && matchesStatus;
-  });
+    // Filter by status
+    if (statusFilter !== 'All') {
+      list = list.filter((a) => a.status.toLowerCase() === statusFilter.toLowerCase());
+    }
+
+    // Sort by Doctor Name, then Date, then TimeSlot
+    return list.sort((a, b) => {
+      if (a.doctor !== b.doctor) {
+        return a.doctor.localeCompare(b.doctor);
+      }
+      const dateA = a.date || '';
+      const dateB = b.date || '';
+      if (dateA !== dateB) {
+        return dateA.localeCompare(dateB);
+      }
+      return (a.timeSlot || '').localeCompare(b.timeSlot || '');
+    });
+  };
+
+  const queueList = getOrganizedQueue();
+
+  // Group by Doctor for Doctor-Wise Queue Tab
+  const groupedByDoctor = queueList.reduce((acc, apt) => {
+    const docName = apt.doctor || 'Unassigned Doctor';
+    if (!acc[docName]) acc[docName] = [];
+    acc[docName].push(apt);
+    return acc;
+  }, {});
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
@@ -315,9 +391,9 @@ const ReceptionistDashboard = () => {
             <div>
               <h1 className="font-extrabold text-lg tracking-tight flex items-center gap-2">
                 <span>CarePlus</span>
-                <span className="text-amber-400">Reception Desk</span>
+                <span className="text-amber-400">Reception Console</span>
               </h1>
-              <p className="text-[10px] text-slate-400">Real-time Appointments, Patient Triage & Billing Console</p>
+              <p className="text-[10px] text-slate-400">Real-time Patient Queue, Doctor Schedules & Billing</p>
             </div>
           </div>
 
@@ -348,16 +424,35 @@ const ReceptionistDashboard = () => {
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1 space-y-6">
         
+        {/* Real-Time Status Notification Banner */}
+        <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 text-white shadow-md flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <span className="flex h-3 w-3 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+            </span>
+            <div>
+              <p className="font-extrabold text-sm leading-tight">⚡ Real-Time Patient Queue Active</p>
+              <p className="text-xs text-amber-100 mt-0.5">Newly booked appointments & status changes update automatically without page refresh.</p>
+            </div>
+          </div>
+
+          <div className="hidden sm:flex items-center space-x-2 text-xs font-extrabold bg-white/20 px-3 py-1.5 rounded-xl backdrop-blur-md">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            <span>Auto-Synced Queue ({appointments.length} Total)</span>
+          </div>
+        </div>
+
         {/* Navigation Tabs Header */}
         <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap gap-2">
           <button
-            onClick={() => setActiveTab('appointments')}
+            onClick={() => setActiveTab('queue')}
             className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all ${
-              activeTab === 'appointments' ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20' : 'text-slate-600 hover:bg-slate-100'
+              activeTab === 'queue' ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20' : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <Calendar className="w-4 h-4" />
-            <span>Real-time Appointments ({appointments.length})</span>
+            <Zap className="w-4 h-4" />
+            <span>Real-time Queue ({queueList.length})</span>
           </button>
 
           <button
@@ -401,11 +496,11 @@ const ReceptionistDashboard = () => {
           </button>
         </div>
 
-        {/* TAB 1: ALL APPOINTMENTS (Real-Time) */}
-        {activeTab === 'appointments' && (
+        {/* TAB 1: REAL-TIME PATIENT QUEUE (Organized by Doctor & Time) */}
+        {activeTab === 'queue' && (
           <div className="space-y-6 animate-in fade-in duration-200">
             
-            {/* Filter Bar */}
+            {/* Filter & Search Controls */}
             <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="relative w-full md:w-80">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -421,7 +516,7 @@ const ReceptionistDashboard = () => {
               <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                 <div className="flex items-center space-x-2">
                   <Filter className="w-4 h-4 text-slate-400" />
-                  <span className="text-xs font-bold text-slate-600">Doctor:</span>
+                  <span className="text-xs font-bold text-slate-600">Filter Doctor:</span>
                   <select
                     value={selectedDoctorFilter}
                     onChange={(e) => setSelectedDoctorFilter(e.target.value)}
@@ -434,7 +529,7 @@ const ReceptionistDashboard = () => {
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs font-bold text-slate-600">Status:</span>
+                  <span className="text-xs font-bold text-slate-600">Filter Status:</span>
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
@@ -442,6 +537,7 @@ const ReceptionistDashboard = () => {
                   >
                     <option value="All">All Statuses</option>
                     <option value="Confirmed">Confirmed</option>
+                    <option value="In Consultation">In Consultation</option>
                     <option value="Completed">Completed</option>
                     <option value="Rescheduled">Rescheduled</option>
                     <option value="Cancelled">Cancelled</option>
@@ -450,55 +546,82 @@ const ReceptionistDashboard = () => {
               </div>
             </div>
 
-            {/* Appointments Table */}
+            {/* Queue Table */}
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-extrabold text-slate-900">Real-Time Patient Appointments Queue</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Showing {filteredAppointments.length} matching appointments</p>
+                  <h2 className="text-lg font-extrabold text-slate-900">Live Patient Queue (Organized by Doctor & Time)</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">Status changes reflect immediately in real time across the portal</p>
                 </div>
-                <button
-                  onClick={() => setActiveTab('walkin')}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 transition-all shadow-md"
-                >
-                  + Add Walk-in Patient
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setActiveTab('walkin')}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 transition-all shadow-md"
+                  >
+                    + Add Walk-in Patient
+                  </button>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700 uppercase tracking-wider">
                     <tr>
-                      <th className="p-4">Token / ID</th>
-                      <th className="p-4">Patient Name</th>
+                      <th className="p-4">Token Code</th>
+                      <th className="p-4">Patient Details</th>
                       <th className="p-4">Assigned Doctor</th>
-                      <th className="p-4">Department</th>
-                      <th className="p-4">Date & Time</th>
-                      <th className="p-4">Status</th>
+                      <th className="p-4">Appt Date & Time</th>
+                      <th className="p-4">Current Status</th>
+                      <th className="p-4 text-center">Instant Real-Time Status Change</th>
                       <th className="p-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-medium">
-                    {filteredAppointments.length > 0 ? (
-                      filteredAppointments.map((apt) => (
-                        <tr key={apt.id || apt.tokenNumber} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="p-4 font-bold text-amber-600">
-                            {apt.tokenNumber || apt.id}
+                    {queueList.length > 0 ? (
+                      queueList.map((apt) => (
+                        <tr key={apt.id || apt.tokenNumber} className="hover:bg-amber-50/40 transition-colors">
+                          
+                          {/* Token */}
+                          <td className="p-4 font-extrabold text-amber-600">
+                            <span className="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200">
+                              {apt.tokenNumber || apt.id}
+                            </span>
                           </td>
+
+                          {/* Patient */}
                           <td className="p-4">
                             <p className="font-bold text-slate-900">{apt.patientName}</p>
-                            <p className="text-[10px] text-slate-400">{apt.patientId || 'PT-9801'}</p>
+                            <p className="text-[10px] text-slate-400">{apt.patientId || 'PT-9801'} • {apt.consultationType || 'OPD Checkup'}</p>
                           </td>
-                          <td className="p-4 font-bold text-slate-800">{apt.doctor}</td>
-                          <td className="p-4 text-slate-600">{apt.department}</td>
+
+                          {/* Doctor */}
+                          <td className="p-4 font-bold text-slate-800">
+                            <div className="flex items-center space-x-1.5">
+                              <Stethoscope className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                              <span>{apt.doctor}</span>
+                            </div>
+                            <p className="text-[10px] text-slate-500 font-normal">{apt.department}</p>
+                          </td>
+
+                          {/* Date / Time */}
                           <td className="p-4">
-                            <p className="font-bold text-slate-900">{apt.date}</p>
-                            <p className="text-slate-500">{apt.timeSlot}</p>
+                            <div className="flex items-center space-x-1 text-slate-900 font-bold">
+                              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{apt.date}</span>
+                            </div>
+                            <div className="flex items-center space-x-1 text-amber-600 font-bold mt-0.5">
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>{apt.timeSlot}</span>
+                            </div>
                           </td>
+
+                          {/* Status Badge */}
                           <td className="p-4">
                             <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${
                               apt.status === 'Confirmed' 
                                 ? 'bg-emerald-100 text-emerald-800' 
+                                : apt.status === 'In Consultation'
+                                ? 'bg-purple-100 text-purple-800 animate-pulse'
                                 : apt.status === 'Completed'
                                 ? 'bg-blue-100 text-blue-800'
                                 : apt.status === 'Rescheduled'
@@ -508,26 +631,41 @@ const ReceptionistDashboard = () => {
                               {apt.status}
                             </span>
                           </td>
+
+                          {/* Instant Real-Time Status Switcher Dropdown */}
+                          <td className="p-4 text-center">
+                            <select
+                              value={apt.status}
+                              onChange={(e) => handleStatusChange(apt, e.target.value)}
+                              className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-white text-slate-800 hover:border-amber-500 focus:ring-2 focus:ring-amber-500 shadow-sm"
+                            >
+                              {STATUS_OPTIONS.map((opt, i) => (
+                                <option key={i} value={opt}>{opt}</option>
+                              ))}
+                            </select>
+                          </td>
+
+                          {/* Actions */}
                           <td className="p-4 text-right">
                             <button
                               onClick={() => {
                                 setEditingApt(apt);
                                 setEditDate(apt.date);
                                 setEditTime(apt.timeSlot);
-                                setEditStatus(apt.status);
                               }}
-                              className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-amber-500 hover:text-white text-slate-700 font-bold transition-all"
+                              className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-amber-500 hover:text-white text-slate-700 font-bold transition-all text-xs"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
-                              <span>Reschedule / Update</span>
+                              <span>Reschedule</span>
                             </button>
                           </td>
+
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="7" className="p-8 text-center text-slate-400">
-                          No patient appointments found matching the selected filter criteria.
+                        <td colSpan="7" className="p-10 text-center text-slate-400">
+                          No patient queue records found matching the current filters.
                         </td>
                       </tr>
                     )}
@@ -539,14 +677,14 @@ const ReceptionistDashboard = () => {
           </div>
         )}
 
-        {/* TAB 2: DOCTOR-WISE APPOINTMENTS QUEUE */}
+        {/* TAB 2: DOCTOR-WISE QUEUE (Grouped by Doctor) */}
         {activeTab === 'doctorQueue' && (
           <div className="space-y-6 animate-in fade-in duration-200">
             
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl font-extrabold text-slate-900">Doctor-Wise Appointment Schedules</h2>
-                <p className="text-xs text-slate-500 mt-1">Select a doctor to view their assigned OPD consultations for today</p>
+                <h2 className="text-xl font-extrabold text-slate-900">Doctor-Wise Patient Queues</h2>
+                <p className="text-xs text-slate-500 mt-1">Real-time patient check-ins grouped by attending doctor and sorted by appointment time</p>
               </div>
 
               <div className="flex items-center space-x-3 w-full md:w-auto">
@@ -563,63 +701,70 @@ const ReceptionistDashboard = () => {
               </div>
             </div>
 
-            {/* Doctor Queue Display */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAppointments.map((apt) => (
-                <div key={apt.id || apt.tokenNumber} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4 hover:border-amber-400 transition-all">
-                  <div className="flex justify-between items-start pb-3 border-b border-slate-100">
-                    <div>
-                      <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-0.5 rounded-md">
-                        {apt.tokenNumber || apt.id}
-                      </span>
-                      <h3 className="font-extrabold text-slate-900 text-base mt-2">{apt.patientName}</h3>
-                      <p className="text-xs text-slate-500">{apt.consultationType || 'OPD Checkup'}</p>
+            {/* Doctor Groups */}
+            {Object.keys(groupedByDoctor).map((docName, idx) => (
+              <div key={idx} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 font-bold flex items-center justify-center">
+                      👨‍⚕️
                     </div>
-                    <span className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md uppercase ${
-                      apt.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
-                    }`}>
-                      {apt.status}
-                    </span>
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-base">{docName}</h3>
+                      <p className="text-xs text-slate-500">{groupedByDoctor[docName].length} Patients Scheduled</p>
+                    </div>
                   </div>
-
-                  <div className="space-y-1.5 text-xs text-slate-600">
-                    <p className="flex justify-between">
-                      <span className="text-slate-400">Assigned Doctor:</span>
-                      <strong className="text-slate-800">{apt.doctor}</strong>
-                    </p>
-                    <p className="flex justify-between">
-                      <span className="text-slate-400">Department:</span>
-                      <span>{apt.department}</span>
-                    </p>
-                    <p className="flex justify-between">
-                      <span className="text-slate-400">Scheduled Date:</span>
-                      <strong>{apt.date}</strong>
-                    </p>
-                    <p className="flex justify-between">
-                      <span className="text-slate-400">Time Slot:</span>
-                      <strong className="text-amber-600">{apt.timeSlot}</strong>
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setEditingApt(apt);
-                      setEditDate(apt.date);
-                      setEditTime(apt.timeSlot);
-                      setEditStatus(apt.status);
-                    }}
-                    className="w-full py-2.5 rounded-xl font-bold text-xs text-amber-700 bg-amber-50 hover:bg-amber-500 hover:text-white transition-colors"
-                  >
-                    Change Status / Reschedule
-                  </button>
+                  <span className="text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+                    Live Queue Active
+                  </span>
                 </div>
-              ))}
-            </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {groupedByDoctor[docName].map((apt) => (
+                    <div key={apt.id || apt.tokenNumber} className="p-4 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-3 hover:border-amber-400 transition-all">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="text-xs font-extrabold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
+                            {apt.tokenNumber || apt.id}
+                          </span>
+                          <h4 className="font-extrabold text-slate-900 text-sm mt-1">{apt.patientName}</h4>
+                          <p className="text-[11px] text-slate-500">{apt.consultationType || 'OPD Checkup'}</p>
+                        </div>
+                        <span className={`px-2 py-0.5 text-[9px] font-extrabold rounded uppercase ${
+                          apt.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-800' : 'bg-purple-100 text-purple-800'
+                        }`}>
+                          {apt.status}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs text-slate-600 pt-1 border-t border-slate-200/60">
+                        <span className="font-semibold">{apt.date}</span>
+                        <strong className="text-amber-600">{apt.timeSlot}</strong>
+                      </div>
+
+                      {/* Instant Status Change Select */}
+                      <div className="pt-1">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Instant Status Update:</label>
+                        <select
+                          value={apt.status}
+                          onChange={(e) => handleStatusChange(apt, e.target.value)}
+                          className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold bg-white"
+                        >
+                          {STATUS_OPTIONS.map((opt, i) => (
+                            <option key={i} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
 
           </div>
         )}
 
-        {/* TAB 3: BILLING & INVOICES MANAGEMENT */}
+        {/* TAB 3: BILLING & INVOICES */}
         {activeTab === 'billing' && (
           <div className="space-y-6 animate-in fade-in duration-200">
             
@@ -691,7 +836,7 @@ const ReceptionistDashboard = () => {
               {generatedToken && (
                 <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-center space-y-2 animate-in zoom-in-95">
                   <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-white px-3 py-1 rounded-full border border-emerald-200">
-                    Live Token Issued
+                    Live Token Issued & Added to Real-Time Queue
                   </span>
                   <h3 className="text-3xl font-extrabold text-emerald-700">Token #{generatedToken.tokenNumber}</h3>
                   <p className="text-xs font-bold text-slate-800">Patient: {generatedToken.patientName}</p>
@@ -796,13 +941,13 @@ const ReceptionistDashboard = () => {
 
       </div>
 
-      {/* RESCHEDULE / EDIT APPOINTMENT MODAL */}
+      {/* RESCHEDULE APPOINTMENT MODAL */}
       {editingApt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-slate-100">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <h3 className="font-extrabold text-slate-900 text-lg">Reschedule & Update Status</h3>
+                <h3 className="font-extrabold text-slate-900 text-lg">Reschedule Appointment Date/Time</h3>
                 <p className="text-xs text-slate-500">Patient: {editingApt.patientName}</p>
               </div>
               <button onClick={() => setEditingApt(null)} className="text-slate-400 hover:text-slate-600">
@@ -837,25 +982,11 @@ const ReceptionistDashboard = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Appointment Status</label>
-                <select
-                  value={editStatus}
-                  onChange={(e) => setEditStatus(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm bg-white font-bold"
-                >
-                  <option value="Confirmed">Confirmed</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Rescheduled">Rescheduled</option>
-                  <option value="Cancelled">Cancelled</option>
-                </select>
-              </div>
-
               <button
                 type="submit"
                 className="w-full py-3 rounded-xl font-bold text-sm text-white bg-amber-500 hover:bg-amber-600 transition-colors shadow-md"
               >
-                Save Updated Schedule
+                Save Rescheduled Date & Time
               </button>
             </form>
           </div>
