@@ -60,7 +60,9 @@ const BookAppointmentPage = () => {
     setTimeout(() => {
       setSubmitting(false);
       const tokenNumber = 'OPD-' + Math.floor(1000 + Math.random() * 9000);
-      setConfirmedBooking({
+      const newBooking = {
+        id: tokenNumber,
+        tokenNumber,
         patientName: patientName || currentPatient.name || 'Patient',
         patientId: currentPatient.patientId,
         department,
@@ -68,9 +70,19 @@ const BookAppointmentPage = () => {
         date,
         timeSlot,
         consultationType,
-        tokenNumber,
+        status: 'Confirmed',
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      });
+      };
+
+      // Persist to local storage for real-time sync with Receptionist Dashboard
+      try {
+        const stored = JSON.parse(localStorage.getItem('careplus_appointments') || '[]');
+        localStorage.setItem('careplus_appointments', JSON.stringify([newBooking, ...stored]));
+      } catch (err) {
+        console.error(err);
+      }
+
+      setConfirmedBooking(newBooking);
     }, 600);
   };
 
