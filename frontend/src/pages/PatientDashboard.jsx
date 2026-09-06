@@ -11,21 +11,12 @@ import {
   Bell, 
   LogOut, 
   Plus, 
-  Search, 
   CheckCircle2, 
   AlertCircle, 
-  ChevronRight, 
   Download, 
   Printer, 
   X, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  ShieldCheck, 
-  Heart, 
-  Menu,
-  FileCheck,
-  DollarSign
+  Menu
 } from 'lucide-react';
 
 import apiService from '../api/apiService';
@@ -34,22 +25,6 @@ import {
   usePatientAppointmentsQuery,
   useCreateAppointmentMutation
 } from '../hooks/useApiQueries';
-
-const mockPatientProfile = {
-  id: 'PT-9801',
-  name: 'Alexander Wright',
-  email: 'patient@careplus-hms.com',
-  phone: '+1 (555) 234-5678',
-  age: 34,
-  gender: 'Male',
-  bloodType: 'O+',
-  address: '742 Evergreen Terrace, Springfield',
-  allergies: ['Penicillin', 'Peanuts'],
-  emergencyContact: 'Eleanor Wright (+1 555 987-6543)',
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'
-};
-
-
 
 const mockPrescriptions = [
   {
@@ -211,24 +186,24 @@ const PatientDashboard = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
       
-      {/* Top Navbar */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+      {/* Top Navbar - Receptionist Color Theme */}
+      <header className="bg-slate-900 text-white sticky top-0 z-40 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           
           {/* Mobile Menu & Logo */}
           <div className="flex items-center space-x-3">
             <button 
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors"
+              className="lg:hidden p-2 rounded-xl text-slate-300 hover:bg-slate-800 transition-colors"
             >
               <Menu className="w-6 h-6" />
             </button>
 
             <Link to="/" className="flex items-center space-x-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-blue-600 to-teal-600 flex items-center justify-center text-white font-bold shadow-md">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold shadow-md">
                 <Activity className="w-5 h-5 stroke-[2.5]" />
               </div>
-              <span className="text-lg font-extrabold text-slate-900 tracking-tight">CarePlus <span className="text-blue-600">Patient Portal</span></span>
+              <span className="text-lg font-extrabold text-white tracking-tight">CarePlus <span className="text-amber-400">Patient Portal</span></span>
             </Link>
           </div>
 
@@ -238,7 +213,7 @@ const PatientDashboard = () => {
             {/* Quick Book CTA */}
             <button
               onClick={() => setBookingModalOpen(true)}
-              className="hidden sm:flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-teal-600 shadow-md shadow-blue-500/20 hover:shadow-blue-500/35 transition-all"
+              className="hidden sm:flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 shadow-md shadow-amber-500/20 transition-all"
             >
               <Plus className="w-4 h-4" />
               <span>Book Appointment</span>
@@ -248,11 +223,11 @@ const PatientDashboard = () => {
             <div className="relative">
               <button 
                 onClick={() => setNotifOpen(!notifOpen)}
-                className="p-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 relative transition-colors"
+                className="p-2.5 rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 relative transition-colors border border-slate-700"
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center">
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-amber-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center">
                     {unreadCount}
                   </span>
                 )}
@@ -260,19 +235,19 @@ const PatientDashboard = () => {
 
               {/* Notifications Dropdown */}
               {notifOpen && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 animate-in fade-in duration-200">
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 animate-in fade-in duration-200 text-slate-800">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                     <h4 className="font-bold text-sm text-slate-900">Notifications ({notifications.length})</h4>
                     <button 
                       onClick={() => setNotifications(notifications.map(n => ({ ...n, read: true })))}
-                      className="text-[11px] font-bold text-blue-600 hover:underline"
+                      className="text-[11px] font-bold text-amber-600 hover:underline"
                     >
                       Mark all as read
                     </button>
                   </div>
                   <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto my-2">
                     {notifications.map((n) => (
-                      <div key={n.id} className={`py-3 px-2 rounded-xl text-xs space-y-1 ${!n.read ? 'bg-blue-50/50 font-medium' : ''}`}>
+                      <div key={n.id} className={`py-3 px-2 rounded-xl text-xs space-y-1 ${!n.read ? 'bg-amber-50/50 font-medium' : ''}`}>
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-slate-900">{n.title}</span>
                           <span className="text-[10px] text-slate-400">{n.time}</span>
@@ -286,13 +261,13 @@ const PatientDashboard = () => {
             </div>
 
             {/* User Profile Summary */}
-            <div className="flex items-center space-x-3 pl-2 border-l border-slate-200">
-              <div className="w-9 h-9 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-sm ring-2 ring-blue-100">
+            <div className="flex items-center space-x-3 pl-2 border-l border-slate-700">
+              <div className="w-9 h-9 rounded-full bg-amber-500 text-white font-bold flex items-center justify-center text-sm ring-2 ring-amber-400/50">
                 {currentPatient.name ? currentPatient.name[0].toUpperCase() : 'P'}
               </div>
               <div className="hidden md:block text-left text-xs">
-                <p className="font-bold text-slate-900 leading-tight">{currentPatient.name}</p>
-                <p className="text-[11px] text-slate-500 font-semibold">{currentPatient.id}</p>
+                <p className="font-bold text-slate-100 leading-tight">👋 {currentPatient.name}</p>
+                <p className="text-[11px] text-amber-400 font-extrabold uppercase">{currentPatient.id}</p>
               </div>
             </div>
 
@@ -310,26 +285,26 @@ const PatientDashboard = () => {
         }`}>
           <div className="space-y-6">
             
-            {/* Patient Header Card */}
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50 to-teal-50 border border-blue-100 flex items-center space-x-3">
-              <div className="w-11 h-11 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+            {/* Patient Header Card - Amber Theme */}
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 flex items-center space-x-3">
+              <div className="w-11 h-11 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
                 {currentPatient.name ? currentPatient.name.split(' ').map(n=>n[0]).join('').substring(0, 2).toUpperCase() : 'PT'}
               </div>
               <div>
                 <h4 className="font-bold text-slate-900 text-sm leading-tight">{currentPatient.name}</h4>
-                <p className="text-xs font-semibold text-blue-600">Blood Type: {currentPatient.bloodType}</p>
+                <p className="text-xs font-semibold text-amber-600">Blood Type: {currentPatient.bloodType}</p>
                 <span className="inline-block text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded mt-1">
                   Active Patient
                 </span>
               </div>
             </div>
 
-            {/* Navigation Menu Links */}
+            {/* Navigation Menu Links - Amber Theme */}
             <nav className="space-y-1 text-sm font-semibold text-slate-600">
               <button
                 onClick={() => { setActiveTab('overview'); setSidebarOpen(false); }}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all ${
-                  activeTab === 'overview' ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20' : 'hover:bg-slate-100 hover:text-slate-900'
+                  activeTab === 'overview' ? 'bg-amber-500 text-white font-bold shadow-md shadow-amber-500/20' : 'hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 <Activity className="w-5 h-5" />
@@ -339,7 +314,7 @@ const PatientDashboard = () => {
               <button
                 onClick={() => { setActiveTab('appointments'); setSidebarOpen(false); }}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all ${
-                  activeTab === 'appointments' ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20' : 'hover:bg-slate-100 hover:text-slate-900'
+                  activeTab === 'appointments' ? 'bg-amber-500 text-white font-bold shadow-md shadow-amber-500/20' : 'hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 <Calendar className="w-5 h-5" />
@@ -349,7 +324,7 @@ const PatientDashboard = () => {
               <button
                 onClick={() => { setActiveTab('prescriptions'); setSidebarOpen(false); }}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all ${
-                  activeTab === 'prescriptions' ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20' : 'hover:bg-slate-100 hover:text-slate-900'
+                  activeTab === 'prescriptions' ? 'bg-amber-500 text-white font-bold shadow-md shadow-amber-500/20' : 'hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 <Pill className="w-5 h-5" />
@@ -359,7 +334,7 @@ const PatientDashboard = () => {
               <button
                 onClick={() => { setActiveTab('reports'); setSidebarOpen(false); }}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all ${
-                  activeTab === 'reports' ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20' : 'hover:bg-slate-100 hover:text-slate-900'
+                  activeTab === 'reports' ? 'bg-amber-500 text-white font-bold shadow-md shadow-amber-500/20' : 'hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 <FileText className="w-5 h-5" />
@@ -369,7 +344,7 @@ const PatientDashboard = () => {
               <button
                 onClick={() => { setActiveTab('billing'); setSidebarOpen(false); }}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all ${
-                  activeTab === 'billing' ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20' : 'hover:bg-slate-100 hover:text-slate-900'
+                  activeTab === 'billing' ? 'bg-amber-500 text-white font-bold shadow-md shadow-amber-500/20' : 'hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 <CreditCard className="w-5 h-5" />
@@ -379,7 +354,7 @@ const PatientDashboard = () => {
               <button
                 onClick={() => { setActiveTab('profile'); setSidebarOpen(false); }}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all ${
-                  activeTab === 'profile' ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/20' : 'hover:bg-slate-100 hover:text-slate-900'
+                  activeTab === 'profile' ? 'bg-amber-500 text-white font-bold shadow-md shadow-amber-500/20' : 'hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 <User className="w-5 h-5" />
@@ -408,16 +383,16 @@ const PatientDashboard = () => {
           {activeTab === 'overview' && (
             <div className="space-y-6 animate-in fade-in duration-200">
               
-              {/* Quick Stats Cards using REAL BACKEND STATISTICS */}
+              {/* Quick Stats Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 
-                <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm flex items-center justify-between hover:border-blue-300 transition-all">
+                <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm flex items-center justify-between hover:border-amber-300 transition-all">
                   <div>
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Appointments</p>
                     <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{statistics.total}</h3>
-                    <p className="text-[11px] text-blue-600 font-semibold mt-1">Real-time DB Sync</p>
+                    <p className="text-[11px] text-amber-600 font-semibold mt-1">Real-time DB Sync</p>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
                     <Activity className="w-6 h-6 stroke-[2.5]" />
                   </div>
                 </div>
@@ -457,14 +432,14 @@ const PatientDashboard = () => {
 
               </div>
 
-              {/* Next Upcoming Appointment Highlight Banner */}
-              <div className="bg-gradient-to-r from-blue-600 to-teal-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+              {/* Next Upcoming Appointment Banner - Amber/Orange Theme */}
+              <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="space-y-2 text-center md:text-left">
                   <span className="text-[11px] font-extrabold uppercase tracking-widest bg-white/20 px-3 py-1 rounded-full text-white">
                     Next Consultation
                   </span>
                   <h3 className="text-2xl font-extrabold">Dr. Sarah Jenkins, MD</h3>
-                  <p className="text-xs text-blue-100">
+                  <p className="text-xs text-amber-100">
                     Cardiology & Heart Care • Room 304, Block B
                   </p>
                   <div className="flex items-center justify-center md:justify-start space-x-4 pt-2 text-xs font-bold">
@@ -481,7 +456,7 @@ const PatientDashboard = () => {
 
                 <button
                   onClick={() => setActiveTab('appointments')}
-                  className="px-6 py-3 rounded-xl font-bold text-sm text-blue-900 bg-white hover:bg-blue-50 shadow-lg transition-all"
+                  className="px-6 py-3 rounded-xl font-bold text-sm text-amber-900 bg-white hover:bg-amber-50 shadow-lg transition-all"
                 >
                   Manage Appointments
                 </button>
@@ -496,7 +471,7 @@ const PatientDashboard = () => {
                     <h4 className="font-bold text-slate-900 text-base">Active Prescriptions</h4>
                     <button 
                       onClick={() => setActiveTab('prescriptions')}
-                      className="text-xs font-bold text-blue-600 hover:underline"
+                      className="text-xs font-bold text-amber-600 hover:underline"
                     >
                       View All
                     </button>
@@ -523,7 +498,7 @@ const PatientDashboard = () => {
                     <h4 className="font-bold text-slate-900 text-base">Latest Diagnostic Reports</h4>
                     <button 
                       onClick={() => setActiveTab('reports')}
-                      className="text-xs font-bold text-blue-600 hover:underline"
+                      className="text-xs font-bold text-amber-600 hover:underline"
                     >
                       View All
                     </button>
@@ -538,7 +513,7 @@ const PatientDashboard = () => {
                         </div>
                         <button 
                           onClick={() => setViewReportModal(rep)}
-                          className="px-3 py-1.5 rounded-xl bg-blue-100 text-blue-700 text-xs font-bold hover:bg-blue-600 hover:text-white transition-colors"
+                          className="px-3 py-1.5 rounded-xl bg-amber-100 text-amber-800 text-xs font-bold hover:bg-amber-500 hover:text-white transition-colors"
                         >
                           View
                         </button>
@@ -563,20 +538,20 @@ const PatientDashboard = () => {
                 </div>
                 <button
                   onClick={() => setBookingModalOpen(true)}
-                  className="flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all shadow-md"
+                  className="flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 transition-all shadow-md"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Book New Appointment</span>
                 </button>
               </div>
 
-              {/* Appointments List using REAL BACKEND DATA */}
+              {/* Appointments List */}
               <div className="space-y-4">
                 {appointmentsList.length > 0 ? (
                   appointmentsList.map((apt) => (
-                    <div key={apt._id || apt.id || apt.tokenNumber} className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:border-blue-300 transition-all">
+                    <div key={apt._id || apt.id || apt.tokenNumber} className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 hover:border-amber-300 transition-all">
                       <div className="flex items-start space-x-4">
-                        <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-1 font-extrabold text-sm">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 mt-1 font-extrabold text-sm">
                           <Calendar className="w-6 h-6" />
                         </div>
                         <div>
@@ -588,13 +563,13 @@ const PatientDashboard = () => {
                                 : apt.status === 'Cancelled'
                                 ? 'bg-rose-100 text-rose-800'
                                 : apt.status === 'In Consultation'
-                                ? 'bg-blue-100 text-blue-800 animate-pulse'
+                                ? 'bg-amber-100 text-amber-800 animate-pulse'
                                 : 'bg-emerald-100 text-emerald-800'
                             }`}>
                               {apt.status}
                             </span>
                           </div>
-                          <p className="text-xs font-semibold text-blue-600 mt-0.5">{apt.department}</p>
+                          <p className="text-xs font-semibold text-amber-600 mt-0.5">{apt.department}</p>
                           <p className="text-xs text-slate-500 mt-1">{apt.type || 'OPD Consultation'} • Token #{apt.tokenNumber || apt.id}</p>
                         </div>
                       </div>
@@ -631,7 +606,7 @@ const PatientDashboard = () => {
                   <div key={rx.id} className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm space-y-4">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                       <div>
-                        <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">{rx.id}</span>
+                        <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">{rx.id}</span>
                         <h4 className="font-bold text-slate-900 text-base mt-1">{rx.doctor}</h4>
                       </div>
                       <span className="text-xs font-semibold text-slate-500">Issued: {rx.date}</span>
@@ -706,7 +681,7 @@ const PatientDashboard = () => {
                           <td className="p-4 text-right">
                             <button
                               onClick={() => setViewReportModal(rep)}
-                              className="px-3 py-1.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors"
+                              className="px-3 py-1.5 rounded-xl bg-amber-500 text-white font-bold hover:bg-amber-600 transition-colors"
                             >
                               View Report
                             </button>
@@ -768,12 +743,12 @@ const PatientDashboard = () => {
               <div className="bg-white p-8 rounded-3xl border border-slate-200/90 shadow-sm space-y-6">
                 
                 <div className="flex items-center space-x-6 pb-6 border-b border-slate-100">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-r from-blue-600 to-teal-600 text-white font-extrabold text-2xl flex items-center justify-center shadow-lg ring-4 ring-blue-100">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold text-2xl flex items-center justify-center shadow-lg ring-4 ring-amber-100">
                     {currentPatient.name ? currentPatient.name.split(' ').map(n=>n[0]).join('').substring(0, 2).toUpperCase() : 'PT'}
                   </div>
                   <div>
                     <h4 className="text-xl font-extrabold text-slate-900">{currentPatient.name}</h4>
-                    <p className="text-xs font-bold text-blue-600">Patient ID: {currentPatient.id}</p>
+                    <p className="text-xs font-bold text-amber-600">Patient ID: {currentPatient.id}</p>
                     <p className="text-xs text-slate-500 mt-1">{currentPatient.email}</p>
                   </div>
                 </div>
@@ -827,7 +802,7 @@ const PatientDashboard = () => {
       {bookingModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-100">
-            <div className="bg-gradient-to-r from-blue-600 to-teal-600 p-6 text-white flex items-center justify-between">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white flex items-center justify-between">
               <h3 className="font-bold text-lg">Book OPD Appointment</h3>
               <button onClick={() => setBookingModalOpen(false)} className="text-white hover:opacity-80">
                 <X className="w-5 h-5" />
@@ -846,7 +821,7 @@ const PatientDashboard = () => {
                 <select
                   value={newDept}
                   onChange={(e) => setNewDept(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:ring-2 focus:ring-amber-500"
                 >
                   <option value="Cardiology & Heart Care">Cardiology & Heart Care</option>
                   <option value="Neurology & Brain Sciences">Neurology & Brain Sciences</option>
@@ -860,7 +835,7 @@ const PatientDashboard = () => {
                 <select
                   value={newDoc}
                   onChange={(e) => setNewDoc(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:ring-2 focus:ring-amber-500"
                 >
                   <option value="Dr. Sarah Jenkins, MD">Dr. Sarah Jenkins, MD</option>
                   <option value="Dr. Michael Chen, MD">Dr. Michael Chen, MD</option>
@@ -875,7 +850,7 @@ const PatientDashboard = () => {
                     type="date"
                     value={newDate}
                     onChange={(e) => setNewDate(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
                 <div>
@@ -883,7 +858,7 @@ const PatientDashboard = () => {
                   <select
                     value={newTime}
                     onChange={(e) => setNewTime(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:ring-2 focus:ring-amber-500"
                   >
                     <option value="09:30 AM">09:30 AM</option>
                     <option value="11:00 AM">11:00 AM</option>
@@ -894,7 +869,7 @@ const PatientDashboard = () => {
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 shadow-md transition-all"
+                className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-amber-500 hover:bg-amber-600 shadow-md transition-all"
               >
                 Confirm Appointment Token
               </button>
@@ -924,7 +899,7 @@ const PatientDashboard = () => {
 
             <button
               onClick={() => { alert(`Downloading ${viewReportModal.title}...`); setViewReportModal(null); }}
-              className="w-full py-3 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+              className="w-full py-3 rounded-xl font-bold text-sm text-white bg-amber-500 hover:bg-amber-600 transition-colors flex items-center justify-center space-x-2"
             >
               <Download className="w-4 h-4" />
               <span>Download Official Report PDF</span>
@@ -954,7 +929,7 @@ const PatientDashboard = () => {
 
             <button
               onClick={() => { alert(`Printing receipt #${viewInvoiceModal.id}...`); setViewInvoiceModal(null); }}
-              className="w-full py-3 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+              className="w-full py-3 rounded-xl font-bold text-sm text-white bg-amber-500 hover:bg-amber-600 transition-colors flex items-center justify-center space-x-2"
             >
               <Printer className="w-4 h-4" />
               <span>Print Official Billing Receipt</span>
