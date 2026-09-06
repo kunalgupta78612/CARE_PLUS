@@ -49,41 +49,7 @@ const mockPatientProfile = {
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'
 };
 
-const initialAppointments = [
-  {
-    id: 'APT-1082',
-    doctor: 'Dr. Sarah Jenkins, MD',
-    specialty: 'Chief of Cardiology',
-    department: 'Cardiology & Heart Care',
-    date: '2026-09-06',
-    time: '10:30 AM',
-    status: 'Confirmed',
-    type: 'In-Person Consultation',
-    room: 'Room 304, Block B'
-  },
-  {
-    id: 'APT-1045',
-    doctor: 'Dr. Michael Chen, MD',
-    specialty: 'Senior Neurosurgeon',
-    department: 'Neurology & Brain Sciences',
-    date: '2026-09-12',
-    time: '02:00 PM',
-    status: 'Confirmed',
-    type: 'Follow-up Checkup',
-    room: 'Room 108, Main Wing'
-  },
-  {
-    id: 'APT-0980',
-    doctor: 'Dr. Emily Rodriguez, MD',
-    specialty: 'Pediatric Specialist',
-    department: 'Pediatrics & Child Health',
-    date: '2026-08-20',
-    time: '11:00 AM',
-    status: 'Completed',
-    type: 'Routine Checkup',
-    room: 'Room 202'
-  }
-];
+
 
 const mockPrescriptions = [
   {

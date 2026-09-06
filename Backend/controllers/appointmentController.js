@@ -216,13 +216,28 @@ export const updateAppointmentStatus = async (req, res, next) => {
 
     // DB Update
     try {
-      const appointment = await Appointment.findById(id);
+      let appointment = null;
+      try {
+        appointment = await Appointment.findById(id);
+      } catch (err) {
+        appointment = await Appointment.findOne({ tokenNumber: id });
+      }
+
       if (appointment) {
         if (status) appointment.status = status;
         if (date) appointment.date = date;
         if (timeSlot) appointment.timeSlot = timeSlot;
 
         const updated = await appointment.save();
+
+        // Also sync memory store if present
+        const memIndex = memoryAppointments.findIndex(a => a._id === id || a.tokenNumber === id || a.id === id);
+        if (memIndex !== -1) {
+          if (status) memoryAppointments[memIndex].status = status;
+          if (date) memoryAppointments[memIndex].date = date;
+          if (timeSlot) memoryAppointments[memIndex].timeSlot = timeSlot;
+        }
+
         return res.json({
           success: true,
           message: 'Appointment status updated successfully',

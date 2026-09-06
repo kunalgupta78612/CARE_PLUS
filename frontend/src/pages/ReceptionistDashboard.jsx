@@ -33,90 +33,6 @@ import {
   useCreateAppointmentMutation
 } from '../hooks/useApiQueries';
 
-const DEFAULT_APPOINTMENTS = [
-  {
-    id: 'OPD-1082',
-    tokenNumber: 'OPD-1082',
-    patientName: 'Alexander Wright',
-    patientId: 'PT-9801',
-    doctor: 'Dr. Sarah Jenkins, MD',
-    department: 'Cardiology & Heart Care',
-    date: '2026-09-06',
-    timeSlot: '10:30 AM',
-    status: 'In Consultation',
-    consultationType: 'Cardiology OPD'
-  },
-  {
-    id: 'OPD-1090',
-    tokenNumber: 'OPD-1090',
-    patientName: 'Maria Garcia',
-    patientId: 'PT-9822',
-    doctor: 'Dr. Michael Chen, MD',
-    department: 'Neurology & Brain Sciences',
-    date: '2026-09-06',
-    timeSlot: '11:15 AM',
-    status: 'Confirmed',
-    consultationType: 'Neurology Review'
-  },
-  {
-    id: 'OPD-1104',
-    tokenNumber: 'OPD-1104',
-    patientName: 'David Thorne',
-    patientId: 'PT-9840',
-    doctor: 'Dr. Emily Rodriguez, MD',
-    department: 'Pediatrics & Child Health',
-    date: '2026-09-07',
-    timeSlot: '02:00 PM',
-    status: 'Confirmed',
-    consultationType: 'Pediatric Checkup'
-  },
-  {
-    id: 'OPD-1070',
-    tokenNumber: 'OPD-1070',
-    patientName: 'Eleanor Vance',
-    patientId: 'PT-9788',
-    doctor: 'Dr. Sarah Jenkins, MD',
-    department: 'Cardiology & Heart Care',
-    date: '2026-09-06',
-    timeSlot: '09:30 AM',
-    status: 'Completed',
-    consultationType: 'ECG Follow-up'
-  }
-];
-
-const DEFAULT_INVOICES = [
-  {
-    id: 'INV-9021',
-    patientName: 'Alexander Wright',
-    patientId: 'PT-9801',
-    description: 'Cardiology Consultation & ECG Diagnostic',
-    amount: 185.00,
-    status: 'Paid',
-    method: 'Credit Card',
-    date: '2026-09-06'
-  },
-  {
-    id: 'INV-9022',
-    patientName: 'Maria Garcia',
-    patientId: 'PT-9822',
-    description: '3T MRI Brain Diagnostic Scan',
-    amount: 450.00,
-    status: 'Pending',
-    method: 'Insurance Claim Pending',
-    date: '2026-09-06'
-  },
-  {
-    id: 'INV-9023',
-    patientName: 'David Thorne',
-    patientId: 'PT-9840',
-    description: 'Pediatric OPD Consultation & Prescription',
-    amount: 120.00,
-    status: 'Paid',
-    method: 'Cash / Reception',
-    date: '2026-09-05'
-  }
-];
-
 const DOCTOR_LIST = [
   'All Doctors',
   'Dr. Sarah Jenkins, MD',
@@ -169,15 +85,15 @@ const ReceptionistDashboard = () => {
   const [generatedToken, setGeneratedToken] = useState(null);
 
   // TanStack Query Hooks for Real-Time Backend Sync & Cache Management
-  const { data: fetchedAppointments } = useAllAppointmentsQuery();
-  const { data: fetchedInvoices } = useInvoicesQuery();
+  const { data: fetchedAppointments, isLoading: isAptsLoading } = useAllAppointmentsQuery();
+  const { data: fetchedInvoices, isLoading: isInvoicesLoading } = useInvoicesQuery();
   const updateStatusMutation = useUpdateAppointmentStatusMutation();
   const createInvoiceMutation = useCreateInvoiceMutation();
   const updateInvoiceStatusMutation = useUpdateInvoiceStatusMutation();
   const createAppointmentMutation = useCreateAppointmentMutation();
 
-  const appointments = fetchedAppointments && fetchedAppointments.length > 0 ? fetchedAppointments : DEFAULT_APPOINTMENTS;
-  const invoices = fetchedInvoices && fetchedInvoices.length > 0 ? fetchedInvoices : DEFAULT_INVOICES;
+  const appointments = fetchedAppointments || [];
+  const invoices = fetchedInvoices || [];
 
   // Logout Handler
   const handleLogout = async () => {
