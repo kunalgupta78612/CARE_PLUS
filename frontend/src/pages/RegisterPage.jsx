@@ -88,7 +88,7 @@ const RegisterPage = () => {
                 Create Your Account
               </h2>
               <p className="text-slate-300 text-xs leading-relaxed">
-                Register with your complete health demographics and role privilege (Patient, Doctor, Admin, or Receptionist).
+                Register with your complete health demographics and role privilege (Patient, Doctor, or Receptionist).
               </p>
             </div>
           </div>
@@ -240,7 +240,6 @@ const RegisterPage = () => {
                 >
                   <option value="patient">Patient (Default)</option>
                   <option value="doctor">Doctor</option>
-                  <option value="admin">Admin</option>
                   <option value="receptionist">Receptionist</option>
                 </select>
               </div>
