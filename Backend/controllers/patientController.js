@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import Patient from '../models/Patient.js';
 
 // Pre-seeded Memory Patients Store for fallback
+// Pre-seeded Memory Patients Store for fallback
 export const memoryPatients = [
   {
     _id: 'mem-pat-9801',
@@ -17,6 +18,30 @@ export const memoryPatients = [
     bloodType: 'O+',
     allergies: ['Penicillin', 'Peanuts'],
     emergencyContact: 'Eleanor Wright (+1 555 987-6543)'
+  },
+  {
+    _id: 'mem-doc-9001',
+    patientId: 'DOC-9001',
+    name: 'Dr. Sarah Jenkins, MD',
+    email: 'dr.jenkins@careplus-hms.com',
+    passwordHash: bcrypt.hashSync('demo12345', 10),
+    phone: '+1 (555) 345-6789',
+    role: 'doctor',
+    age: 42,
+    gender: 'Female',
+    bloodType: 'A+'
+  },
+  {
+    _id: 'mem-rec-4091',
+    patientId: 'REC-4091',
+    name: 'Sarah Davis',
+    email: 'staff@careplus-hms.com',
+    passwordHash: bcrypt.hashSync('demo12345', 10),
+    phone: '+1 (555) 456-7890',
+    role: 'receptionist',
+    age: 29,
+    gender: 'Female',
+    bloodType: 'B+'
   }
 ];
 
@@ -43,7 +68,7 @@ export const registerPatient = async (req, res, next) => {
       });
     }
 
-    const selectedRole = (role && ['patient', 'doctor', 'admin', 'receptionist'].includes(role.toLowerCase()))
+    const selectedRole = (role && ['patient', 'doctor', 'receptionist'].includes(role.toLowerCase()))
       ? role.toLowerCase()
       : 'patient';
 
@@ -146,7 +171,7 @@ export const registerPatient = async (req, res, next) => {
 // @access  Public
 export const loginPatient = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
@@ -156,58 +181,55 @@ export const loginPatient = async (req, res, next) => {
     }
 
     const cleanEmail = email.toLowerCase();
+    const targetRole = role ? role.toLowerCase() : null;
 
-    // Check DB first
+    const validateRoleAndRespond = (user) => {
+      const dbRole = (user.role || 'patient').toLowerCase();
+
+      // Backend Role Verification & Enforcement
+      if (targetRole && dbRole !== targetRole) {
+        return res.status(401).json({
+          success: false,
+          message: `Role mismatch: This account is registered as ${dbRole.toUpperCase()}, not ${targetRole.toUpperCase()}. Please select the correct role.`,
+        });
+      }
+
+      const token = generateToken(user._id || user.id, user.role);
+      return res.json({
+        success: true,
+        message: `Logged in successfully as ${user.role}`,
+        token,
+        patient: {
+          id: user._id || user.id,
+          patientId: user.patientId || 'PT-9801',
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          age: user.age,
+          gender: user.gender,
+          bloodType: user.bloodType,
+          allergies: user.allergies || [],
+          emergencyContact: user.emergencyContact || '',
+        },
+      });
+    };
+
+    // 1. Query MongoDB Database first
     try {
       const patient = await Patient.findOne({ email: cleanEmail });
 
       if (patient && (await patient.matchPassword(password))) {
-        const token = generateToken(patient._id, patient.role);
-        return res.json({
-          success: true,
-          message: 'Patient logged in successfully',
-          token,
-          patient: {
-            id: patient._id,
-            patientId: patient.patientId,
-            name: patient.name,
-            email: patient.email,
-            phone: patient.phone,
-            role: patient.role,
-            age: patient.age,
-            gender: patient.gender,
-            bloodType: patient.bloodType,
-            allergies: patient.allergies,
-            emergencyContact: patient.emergencyContact,
-          },
-        });
+        return validateRoleAndRespond(patient);
       }
     } catch (dbErr) {
       // Memory Store Check
     }
 
-    // Memory Store Match
+    // 2. Memory Store Check
     const memPatient = memoryPatients.find(p => p.email === cleanEmail);
-    if (memPatient && await bcrypt.compare(password, memPatient.passwordHash)) {
-      const token = generateToken(memPatient._id, memPatient.role);
-      return res.json({
-        success: true,
-        message: 'Patient logged in successfully',
-        token,
-        patient: {
-          id: memPatient._id,
-          patientId: memPatient.patientId,
-          name: memPatient.name,
-          email: memPatient.email,
-          phone: memPatient.phone,
-          role: memPatient.role,
-          age: memPatient.age,
-          gender: memPatient.gender,
-          bloodType: memPatient.bloodType,
-          allergies: memPatient.allergies,
-          emergencyContact: memPatient.emergencyContact,
-        },
-      });
+    if (memPatient && (await bcrypt.compare(password, memPatient.passwordHash))) {
+      return validateRoleAndRespond(memPatient);
     }
 
     return res.status(401).json({

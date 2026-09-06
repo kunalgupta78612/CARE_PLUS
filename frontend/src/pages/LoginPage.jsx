@@ -6,7 +6,6 @@ import { usePatientLoginMutation } from '../hooks/usePatientAuth';
 const DEMO_ACCOUNTS = [
   { role: 'Patient', email: 'patient@careplus-hms.com', key: 'patient', icon: '🩺', color: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
   { role: 'Doctor', email: 'dr.jenkins@careplus-hms.com', key: 'doctor', icon: '👨‍⚕️', color: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' },
-  { role: 'Admin', email: 'admin@careplus-hms.com', key: 'admin', icon: '👑', color: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100' },
   { role: 'Receptionist', email: 'staff@careplus-hms.com', key: 'receptionist', icon: '📋', color: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' }
 ];
 
@@ -37,21 +36,27 @@ const LoginPage = () => {
     setSuccessMsg('');
 
     try {
-      // Call TanStack Query Mutation connecting to Express JWT Backend
-      const res = await loginMutation.mutateAsync({ email, password });
+      // Call TanStack Query Mutation connecting to Express JWT Backend with email, password, and selected role
+      const res = await loginMutation.mutateAsync({ email, password, role: selectedRole });
       
-      setSuccessMsg(`Welcome back, ${res.patient.name}! Authenticated with JWT token.`);
+      const authenticatedRole = res.patient?.role || selectedRole;
+      setSuccessMsg(`Welcome back, ${res.patient?.name || 'User'}! Logged in as ${authenticatedRole.toUpperCase()}.`);
+      
       setTimeout(() => {
         if (redirectTarget) {
           navigate(decodeURIComponent(redirectTarget));
-        } else if (selectedRole === 'patient' || res.patient.role === 'patient') {
+        } else if (authenticatedRole === 'patient') {
           navigate('/patient-dashboard');
+        } else if (authenticatedRole === 'doctor') {
+          navigate('/doctor-dashboard');
+        } else if (authenticatedRole === 'receptionist') {
+          navigate('/receptionist-dashboard');
         } else {
-          navigate('/');
+          navigate('/patient-dashboard');
         }
       }, 800);
     } catch (err) {
-      setErrorMsg(err.message || 'Invalid email or password');
+      setErrorMsg(err.message || 'Login failed. Please check your credentials and selected role.');
     }
   };
 
@@ -71,13 +76,13 @@ const LoginPage = () => {
 
             <div className="space-y-2 pt-4">
               <span className="text-[11px] font-extrabold uppercase tracking-widest text-cyan-400 bg-cyan-950/80 border border-cyan-800 px-3 py-1 rounded-full">
-                JWT Authentication API
+                Role-Based Authentication
               </span>
               <h2 className="text-2xl sm:text-3xl font-extrabold leading-tight">
-                Secure Patient Portal Access
+                Role-Protected System Access
               </h2>
               <p className="text-slate-300 text-xs leading-relaxed">
-                Connects directly to Express Node.js backend using TanStack Query & encrypted JWT session tokens.
+                Backend-verified role authentication with JWT session tokens for Patient, Doctor, and Receptionist portals.
               </p>
             </div>
           </div>
@@ -85,7 +90,7 @@ const LoginPage = () => {
           <div className="mt-8 pt-6 border-t border-slate-800 space-y-3 relative z-10">
             <div className="flex items-center space-x-2 text-emerald-400 text-xs font-bold">
               <ShieldCheck className="w-4 h-4" />
-              <span>Password Hashed with bcryptjs</span>
+              <span>JWT Session & Role Validation</span>
             </div>
           </div>
         </div>
@@ -96,7 +101,7 @@ const LoginPage = () => {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-2xl font-extrabold text-slate-900">Sign In to Your Account</h3>
-                <p className="text-xs text-slate-500 mt-1">Enter your credentials or click a demo role</p>
+                <p className="text-xs text-slate-500 mt-1">Select your account role and enter credentials</p>
               </div>
               <Link 
                 to="/register" 
@@ -135,9 +140,9 @@ const LoginPage = () => {
             {/* Demo Account Fill Buttons */}
             <div className="mb-6 space-y-2">
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
-                ⚡ 1-Click Demo Accounts (Instant Fill)
+                ⚡ 1-Click Demo Roles (Instant Fill)
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {DEMO_ACCOUNTS.map((acc) => (
                   <button
                     key={acc.key}
@@ -158,6 +163,21 @@ const LoginPage = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              
+              {/* Select Login Role Dropdown */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Select Login Role *</label>
+                <select
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-semibold text-slate-800"
+                >
+                  <option value="patient">Patient (Default)</option>
+                  <option value="doctor">Doctor</option>
+                  <option value="receptionist">Receptionist</option>
+                </select>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Email Address *</label>
                 <div className="relative">
@@ -201,7 +221,7 @@ const LoginPage = () => {
                 className="w-full py-3.5 mt-2 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-blue-600 to-teal-600 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/35 transition-all flex items-center justify-center space-x-2"
               >
                 {loginMutation.isPending ? (
-                  <span>Authenticating JWT...</span>
+                  <span>Verifying Credentials & Role...</span>
                 ) : (
                   <>
                     <span>Sign In via Express Backend</span>
