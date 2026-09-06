@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Activity, ShieldCheck, Mail, Lock, User, Phone, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
+import { Activity, ShieldCheck, Mail, Lock, User, Phone, CheckCircle2, AlertCircle, ArrowRight, HeartPulse, Calendar } from 'lucide-react';
 import { usePatientRegisterMutation } from '../hooks/usePatientAuth';
 
 const RegisterPage = () => {
@@ -12,6 +12,11 @@ const RegisterPage = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [age, setAge] = useState('');
+  const [gender, setGender] = useState('Male');
+  const [bloodType, setBloodType] = useState('O+');
+  const [role, setRole] = useState('patient'); // Default selected role: Patient
+
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -28,25 +33,35 @@ const RegisterPage = () => {
     }
 
     try {
-      // Execute TanStack Query Mutation connecting to Express REST API
+      // Send all registration fields to Express Backend API via TanStack Query mutation
       const res = await registerMutation.mutateAsync({
         name,
         email,
         phone,
         password,
+        age: age ? Number(age) : 30,
+        gender,
+        bloodType,
+        role,
       });
 
-      setSuccessMsg(`Account created for ${res.patient.name}! JWT token issued.`);
+      const userRole = res.patient?.role || role;
+      setSuccessMsg(`Account created successfully for ${res.patient?.name || name}! Redirecting to ${userRole.toUpperCase()} Dashboard...`);
+      
       setTimeout(() => {
-        navigate('/patient-dashboard');
+        if (userRole === 'patient') navigate('/patient-dashboard');
+        else if (userRole === 'doctor') navigate('/doctor-dashboard');
+        else if (userRole === 'admin') navigate('/admin-dashboard');
+        else if (userRole === 'receptionist') navigate('/receptionist-dashboard');
+        else navigate('/patient-dashboard');
       }, 1100);
     } catch (err) {
-      setErrorMsg(err.message || 'Registration failed');
+      setErrorMsg(err.message || 'Registration failed. Please try again.');
     }
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-50">
+    <div className="min-h-[85vh] flex items-center justify-center py-10 px-4 sm:px-6 lg:px-8 bg-slate-50">
       <div className="max-w-4xl w-full bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden grid grid-cols-1 lg:grid-cols-12">
         
         {/* Left Banner */}
@@ -61,13 +76,13 @@ const RegisterPage = () => {
 
             <div className="space-y-2 pt-4">
               <span className="text-[11px] font-extrabold uppercase tracking-widest text-teal-400 bg-teal-950/80 border border-teal-800 px-3 py-1 rounded-full">
-                Node.js Backend Registration
+                Multi-Role User Registration
               </span>
               <h2 className="text-2xl sm:text-3xl font-extrabold leading-tight">
-                Create Patient Account
+                Create Your Account
               </h2>
               <p className="text-slate-300 text-xs leading-relaxed">
-                Registers new patient record in Express backend API with bcryptjs password hashing and JWT token issuance.
+                Register with your complete health demographics and role privilege (Patient, Doctor, Admin, or Receptionist).
               </p>
             </div>
           </div>
@@ -75,7 +90,7 @@ const RegisterPage = () => {
           <div className="mt-8 pt-6 border-t border-slate-800 space-y-3 relative z-10">
             <div className="flex items-center space-x-2 text-teal-400 text-xs font-bold">
               <ShieldCheck className="w-4 h-4" />
-              <span>JWT Authentication & Authorization Active</span>
+              <span>JWT Authentication & bcrypt Encryption</span>
             </div>
           </div>
         </div>
@@ -85,8 +100,8 @@ const RegisterPage = () => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-2xl font-extrabold text-slate-900">Create Patient Account</h3>
-                <p className="text-xs text-slate-500 mt-1">Enter your details to register on CarePlus HMS</p>
+                <h3 className="text-2xl font-extrabold text-slate-900">User Registration</h3>
+                <p className="text-xs text-slate-500 mt-1">Fill out the fields below to create your HMS account</p>
               </div>
               <Link 
                 to="/login" 
@@ -111,6 +126,8 @@ const RegisterPage = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
+              
+              {/* 1. Name */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Full Name *</label>
                 <div className="relative">
@@ -126,6 +143,7 @@ const RegisterPage = () => {
                 </div>
               </div>
 
+              {/* 2. Email & 3. Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Email Address *</label>
@@ -158,6 +176,70 @@ const RegisterPage = () => {
                 </div>
               </div>
 
+              {/* 4. Age, 5. Gender & 6. Blood Type */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Age *</label>
+                  <input 
+                    type="number"
+                    required
+                    min="1"
+                    max="120"
+                    placeholder="e.g. 28"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Gender *</label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Blood Type *</label>
+                  <select
+                    value={bloodType}
+                    onChange={(e) => setBloodType(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 7. Role Selection (Default: Patient) */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Select Account Role *</label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-semibold text-slate-800"
+                >
+                  <option value="patient">Patient (Default)</option>
+                  <option value="doctor">Doctor</option>
+                  <option value="admin">Admin</option>
+                  <option value="receptionist">Receptionist</option>
+                </select>
+              </div>
+
+              {/* 8. Password & Confirm Password */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Password *</label>
@@ -190,6 +272,7 @@ const RegisterPage = () => {
                 </div>
               </div>
 
+              {/* Terms checkbox */}
               <div className="flex items-center space-x-2 pt-1">
                 <input 
                   type="checkbox"
@@ -203,16 +286,17 @@ const RegisterPage = () => {
                 </label>
               </div>
 
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={registerMutation.isPending || !agreed}
                 className="w-full py-3.5 mt-2 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-blue-600 to-teal-600 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/35 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
               >
                 {registerMutation.isPending ? (
-                  <span>Registering via Backend...</span>
+                  <span>Registering Account...</span>
                 ) : (
                   <>
-                    <span>Register Patient Account</span>
+                    <span>Create Account</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
