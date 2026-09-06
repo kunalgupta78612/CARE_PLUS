@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Activity, PhoneCall, Calendar, UserCheck, UserPlus, Menu, X, ShieldAlert, ChevronRight } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Activity, PhoneCall, Calendar, UserCheck, UserPlus, Menu, X, ShieldAlert, ChevronRight, LogOut, LayoutDashboard, User } from 'lucide-react';
+import { getAuthToken, logoutPatientApi } from '../api/authApi';
+import { getDashboardForRole } from './common/PublicRoute';
 
-const Navbar = ({ onOpenBooking, onOpenAuth, onOpenRegister }) => {
+const Navbar = ({ onOpenBooking, onOpenAuth }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const location = useLocation();
+
+  const token = getAuthToken();
+  const storedUserJson = localStorage.getItem('careplus_patient_user');
+  const user = storedUserJson ? JSON.parse(storedUserJson) : null;
+  const isAuthenticated = !!(token && user);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,6 +26,11 @@ const Navbar = ({ onOpenBooking, onOpenAuth, onOpenRegister }) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleLogout = async () => {
+    await logoutPatientApi();
+    navigate('/login');
+  };
 
   const emergencyHotline = '+1 (800) 555-9000';
 
@@ -77,34 +90,69 @@ const Navbar = ({ onOpenBooking, onOpenAuth, onOpenRegister }) => {
             <a href="#contact" className="hover:text-blue-600 transition-colors">Contact</a>
           </nav>
 
-          {/* Action Buttons: Register & Login & Booking */}
+          {/* Action Buttons: Real-time Auth User or Guest Login/Register */}
           <div className="hidden md:flex items-center space-x-3">
-            {/* Login Button */}
-            <Link
-              to="/login"
-              className="flex items-center space-x-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:text-blue-600 hover:bg-slate-100 transition-all border border-slate-200 shadow-sm"
-            >
-              <UserCheck className="w-4 h-4 text-blue-600" />
-              <span>Login</span>
-            </Link>
+            {isAuthenticated ? (
+              <div className="flex items-center space-x-3">
+                {/* Real-time Logged-in User Welcome Badge */}
+                <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-100 text-xs">
+                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs">
+                    {user.name ? user.name[0].toUpperCase() : 'U'}
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-900 leading-tight">👋 {user.name}</p>
+                    <span className="text-[9px] font-extrabold uppercase text-blue-600">{user.role}</span>
+                  </div>
+                </div>
 
-            {/* Register Button */}
-            <Link
-              to="/register"
-              className="flex items-center space-x-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 transition-all border border-blue-200 shadow-sm"
-            >
-              <UserPlus className="w-4 h-4 text-blue-600" />
-              <span>Register</span>
-            </Link>
+                {/* Dashboard Link */}
+                <Link
+                  to={getDashboardForRole(user.role)}
+                  className="flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all shadow-md"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>My Dashboard</span>
+                </Link>
 
-            {/* Book Appointment CTA */}
-            <button
-              onClick={onOpenBooking}
-              className="flex items-center space-x-2 px-5 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-teal-600 shadow-md shadow-blue-500/20 hover:shadow-blue-500/35 hover:-translate-y-0.5 transition-all"
-            >
-              <Calendar className="w-4 h-4" />
-              <span>Book Appointment</span>
-            </button>
+                {/* Logout Button */}
+                <button
+                  onClick={handleLogout}
+                  className="p-2 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 transition-all"
+                  title="Sign Out / Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Login Button */}
+                <Link
+                  to="/login"
+                  className="flex items-center space-x-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:text-blue-600 hover:bg-slate-100 transition-all border border-slate-200 shadow-sm"
+                >
+                  <UserCheck className="w-4 h-4 text-blue-600" />
+                  <span>Login</span>
+                </Link>
+
+                {/* Register Button */}
+                <Link
+                  to="/register"
+                  className="flex items-center space-x-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 transition-all border border-blue-200 shadow-sm"
+                >
+                  <UserPlus className="w-4 h-4 text-blue-600" />
+                  <span>Register</span>
+                </Link>
+
+                {/* Book Appointment CTA */}
+                <button
+                  onClick={onOpenBooking}
+                  className="flex items-center space-x-2 px-5 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-teal-600 shadow-md shadow-blue-500/20 hover:shadow-blue-500/35 hover:-translate-y-0.5 transition-all"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>Book Appointment</span>
+                </button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Hamburger */}
@@ -176,33 +224,58 @@ const Navbar = ({ onOpenBooking, onOpenAuth, onOpenRegister }) => {
           </nav>
           
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
-            <div className="grid grid-cols-2 gap-2">
-              <Link 
-                to="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200"
-              >
-                <UserCheck className="w-4 h-4 text-blue-600" />
-                <span>Login</span>
-              </Link>
+            {isAuthenticated ? (
+              <div className="space-y-2">
+                <div className="p-3 bg-blue-50 rounded-xl text-xs font-bold text-slate-800">
+                  Logged in as: {user.name} ({user.role.toUpperCase()})
+                </div>
+                <Link
+                  to={getDashboardForRole(user.role)}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-blue-600"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>My Dashboard</span>
+                </Link>
+                <button
+                  onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-bold text-rose-600 bg-rose-50"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link 
+                    to="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200"
+                  >
+                    <UserCheck className="w-4 h-4 text-blue-600" />
+                    <span>Login</span>
+                  </Link>
 
-              <Link 
-                to="/register"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200"
-              >
-                <UserPlus className="w-4 h-4 text-blue-600" />
-                <span>Register</span>
-              </Link>
-            </div>
+                  <Link 
+                    to="/register"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200"
+                  >
+                    <UserPlus className="w-4 h-4 text-blue-600" />
+                    <span>Register</span>
+                  </Link>
+                </div>
 
-            <button 
-              onClick={() => { setMobileMenuOpen(false); if (onOpenBooking) onOpenBooking(); }}
-              className="w-full flex items-center justify-center space-x-2 px-5 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-teal-600 shadow-md"
-            >
-              <Calendar className="w-4 h-4" />
-              <span>Book Appointment Now</span>
-            </button>
+                <button 
+                  onClick={() => { setMobileMenuOpen(false); if (onOpenBooking) onOpenBooking(); }}
+                  className="w-full flex items-center justify-center space-x-2 px-5 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-teal-600 shadow-md"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>Book Appointment Now</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

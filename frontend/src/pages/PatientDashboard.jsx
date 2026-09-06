@@ -28,6 +28,9 @@ import {
   DollarSign
 } from 'lucide-react';
 
+import { usePatientProfileQuery } from '../hooks/usePatientAuth';
+import { logoutPatientApi } from '../api/authApi';
+
 const mockPatientProfile = {
   id: 'PT-9801',
   name: 'Alexander Wright',
@@ -157,6 +160,25 @@ const mockNotifications = [
 
 const PatientDashboard = () => {
   const navigate = useNavigate();
+  const { data: profileData } = usePatientProfileQuery();
+
+  const storedUserJson = localStorage.getItem('careplus_patient_user');
+  const storedUser = storedUserJson ? JSON.parse(storedUserJson) : null;
+
+  const currentPatient = {
+    id: profileData?.patientId || profileData?._id || storedUser?.patientId || storedUser?.id || 'PT-9801',
+    name: profileData?.name || storedUser?.name || 'Alexander Wright',
+    email: profileData?.email || storedUser?.email || 'patient@careplus-hms.com',
+    phone: profileData?.phone || storedUser?.phone || '+1 (555) 234-5678',
+    age: profileData?.age || storedUser?.age || 34,
+    gender: profileData?.gender || storedUser?.gender || 'Male',
+    bloodType: profileData?.bloodType || storedUser?.bloodType || 'O+',
+    address: '742 Evergreen Terrace, Springfield',
+    allergies: ['Penicillin', 'Peanuts'],
+    emergencyContact: 'Eleanor Wright (+1 555 987-6543)',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'
+  };
+
   const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'appointments', 'prescriptions', 'reports', 'billing', 'profile'
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -197,7 +219,8 @@ const PatientDashboard = () => {
     }, 1200);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutPatientApi();
     navigate('/login');
   };
 
@@ -280,14 +303,12 @@ const PatientDashboard = () => {
 
             {/* User Profile Summary */}
             <div className="flex items-center space-x-3 pl-2 border-l border-slate-200">
-              <img 
-                src={mockPatientProfile.avatar} 
-                alt="Profile" 
-                className="w-9 h-9 rounded-full object-cover ring-2 ring-blue-100"
-              />
+              <div className="w-9 h-9 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-sm ring-2 ring-blue-100">
+                {currentPatient.name ? currentPatient.name[0].toUpperCase() : 'P'}
+              </div>
               <div className="hidden md:block text-left text-xs">
-                <p className="font-bold text-slate-900 leading-tight">{mockPatientProfile.name}</p>
-                <p className="text-[11px] text-slate-500 font-semibold">{mockPatientProfile.id}</p>
+                <p className="font-bold text-slate-900 leading-tight">{currentPatient.name}</p>
+                <p className="text-[11px] text-slate-500 font-semibold">{currentPatient.id}</p>
               </div>
             </div>
 
@@ -308,11 +329,11 @@ const PatientDashboard = () => {
             {/* Patient Header Card */}
             <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50 to-teal-50 border border-blue-100 flex items-center space-x-3">
               <div className="w-11 h-11 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
-                AW
+                {currentPatient.name ? currentPatient.name.split(' ').map(n=>n[0]).join('').substring(0, 2).toUpperCase() : 'PT'}
               </div>
               <div>
-                <h4 className="font-bold text-slate-900 text-sm leading-tight">{mockPatientProfile.name}</h4>
-                <p className="text-xs font-semibold text-blue-600">Blood Type: {mockPatientProfile.bloodType}</p>
+                <h4 className="font-bold text-slate-900 text-sm leading-tight">{currentPatient.name}</h4>
+                <p className="text-xs font-semibold text-blue-600">Blood Type: {currentPatient.bloodType}</p>
                 <span className="inline-block text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded mt-1">
                   Active Patient
                 </span>
@@ -751,48 +772,46 @@ const PatientDashboard = () => {
               <div className="bg-white p-8 rounded-3xl border border-slate-200/90 shadow-sm space-y-6">
                 
                 <div className="flex items-center space-x-6 pb-6 border-b border-slate-100">
-                  <img 
-                    src={mockPatientProfile.avatar} 
-                    alt="Avatar" 
-                    className="w-20 h-20 rounded-2xl object-cover ring-4 ring-blue-100"
-                  />
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-r from-blue-600 to-teal-600 text-white font-extrabold text-2xl flex items-center justify-center shadow-lg ring-4 ring-blue-100">
+                    {currentPatient.name ? currentPatient.name.split(' ').map(n=>n[0]).join('').substring(0, 2).toUpperCase() : 'PT'}
+                  </div>
                   <div>
-                    <h4 className="text-xl font-extrabold text-slate-900">{mockPatientProfile.name}</h4>
-                    <p className="text-xs font-bold text-blue-600">Patient ID: {mockPatientProfile.id}</p>
-                    <p className="text-xs text-slate-500 mt-1">{mockPatientProfile.email}</p>
+                    <h4 className="text-xl font-extrabold text-slate-900">{currentPatient.name}</h4>
+                    <p className="text-xs font-bold text-blue-600">Patient ID: {currentPatient.id}</p>
+                    <p className="text-xs text-slate-500 mt-1">{currentPatient.email}</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
                   <div>
                     <label className="block font-bold text-slate-500 uppercase tracking-wider mb-1">Age & Gender</label>
-                    <p className="font-bold text-slate-900 text-sm">{mockPatientProfile.age} Years • {mockPatientProfile.gender}</p>
+                    <p className="font-bold text-slate-900 text-sm">{currentPatient.age} Years • {currentPatient.gender}</p>
                   </div>
 
                   <div>
                     <label className="block font-bold text-slate-500 uppercase tracking-wider mb-1">Blood Type</label>
-                    <p className="font-bold text-rose-600 text-sm">{mockPatientProfile.bloodType}</p>
+                    <p className="font-bold text-rose-600 text-sm">{currentPatient.bloodType}</p>
                   </div>
 
                   <div>
                     <label className="block font-bold text-slate-500 uppercase tracking-wider mb-1">Phone Number</label>
-                    <p className="font-bold text-slate-900 text-sm">{mockPatientProfile.phone}</p>
+                    <p className="font-bold text-slate-900 text-sm">{currentPatient.phone}</p>
                   </div>
 
                   <div>
                     <label className="block font-bold text-slate-500 uppercase tracking-wider mb-1">Emergency Contact</label>
-                    <p className="font-bold text-slate-900 text-sm">{mockPatientProfile.emergencyContact}</p>
+                    <p className="font-bold text-slate-900 text-sm">{currentPatient.emergencyContact}</p>
                   </div>
 
                   <div className="sm:col-span-2">
                     <label className="block font-bold text-slate-500 uppercase tracking-wider mb-1">Residential Address</label>
-                    <p className="font-bold text-slate-900 text-sm">{mockPatientProfile.address}</p>
+                    <p className="font-bold text-slate-900 text-sm">{currentPatient.address}</p>
                   </div>
 
                   <div className="sm:col-span-2">
                     <label className="block font-bold text-slate-500 uppercase tracking-wider mb-1">Known Allergies</label>
                     <div className="flex space-x-2 mt-1">
-                      {mockPatientProfile.allergies.map((a, i) => (
+                      {currentPatient.allergies.map((a, i) => (
                         <span key={i} className="px-3 py-1 rounded-full bg-rose-100 text-rose-800 font-bold text-xs">
                           ⚠️ {a}
                         </span>

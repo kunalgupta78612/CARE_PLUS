@@ -10,6 +10,7 @@ import DoctorDashboard from './pages/DoctorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ReceptionistDashboard from './pages/ReceptionistDashboard';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
+import { PublicRoute } from './components/common/PublicRoute';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,8 +29,10 @@ function App() {
           {/* Main Public Layout Routes */}
           <Route path="/" element={<MainLayout />}>
             <Route index element={<LandingPage />} />
-            <Route path="login" element={<LoginPage />} />
-            <Route path="register" element={<RegisterPage />} />
+            <Route element={<PublicRoute />}>
+              <Route path="login" element={<LoginPage />} />
+              <Route path="register" element={<RegisterPage />} />
+            </Route>
           </Route>
 
           {/* Protected Role-Based Routes */}
