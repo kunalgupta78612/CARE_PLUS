@@ -14,14 +14,13 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { departments, topDoctors } from '../data/hmsData';
-import { usePatientProfileQuery } from '../hooks/usePatientAuth';
-import { useCreateAppointmentMutation } from '../hooks/useAppointments';
+import { useProfileQuery, useCreateAppointmentMutation } from '../hooks';
 
 const BookAppointmentPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { data: profileData } = usePatientProfileQuery();
+  const { data: profileData } = useProfileQuery();
   const createAptMutation = useCreateAppointmentMutation();
 
   const storedUserJson = localStorage.getItem('careplus_patient_user');

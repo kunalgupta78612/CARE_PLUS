@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Activity, ShieldCheck, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle, Calendar } from 'lucide-react';
-import { usePatientLoginMutation } from '../hooks/usePatientAuth';
+import { useLoginMutation } from '../hooks';
 
 const DEMO_ACCOUNTS = [
   { role: 'Patient', email: 'patient@careplus-hms.com', key: 'patient', icon: '🩺', color: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
@@ -15,7 +15,7 @@ const LoginPage = () => {
   const [searchParams] = useSearchParams();
   const redirectTarget = searchParams.get('redirect') || location.state?.from;
 
-  const loginMutation = usePatientLoginMutation();
+  const loginMutation = useLoginMutation();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

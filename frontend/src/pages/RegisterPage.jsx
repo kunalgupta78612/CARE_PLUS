@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Activity, ShieldCheck, Mail, Lock, User, Phone, CheckCircle2, AlertCircle, ArrowRight, HeartPulse, Calendar } from 'lucide-react';
-import { usePatientRegisterMutation } from '../hooks/usePatientAuth';
+import { useRegisterMutation } from '../hooks';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -9,7 +9,7 @@ const RegisterPage = () => {
   const [searchParams] = useSearchParams();
   const redirectTarget = searchParams.get('redirect') || location.state?.from;
 
-  const registerMutation = usePatientRegisterMutation();
+  const registerMutation = useRegisterMutation();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Activity, PhoneCall, Calendar, UserCheck, UserPlus, Menu, X, ShieldAlert, ChevronRight, LogOut, LayoutDashboard, User } from 'lucide-react';
-import { getAuthToken, logoutPatientApi } from '../api/authApi';
+import { getAuthToken, logoutUser } from '../api';
 import { getDashboardForRole } from './common/PublicRoute';
 
 const Navbar = ({ onOpenBooking, onOpenAuth }) => {
@@ -28,7 +28,7 @@ const Navbar = ({ onOpenBooking, onOpenAuth }) => {
   }, []);
 
   const handleLogout = async () => {
-    await logoutPatientApi();
+    await logoutUser();
     navigate('/login');
   };
 

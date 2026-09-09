@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { ShieldAlert, ArrowLeft, Lock } from 'lucide-react';
-import { getAuthToken } from '../../api/authApi';
+import { getAuthToken } from '../../api';
 
 export const ProtectedRoute = ({ allowedRoles = [] }) => {
   const location = useLocation();

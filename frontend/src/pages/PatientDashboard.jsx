@@ -19,12 +19,12 @@ import {
   Menu
 } from 'lucide-react';
 
-import apiService from '../api/apiService';
+import { logoutUser } from '../api';
 import {
-  usePatientProfileQuery,
+  useProfileQuery,
   usePatientAppointmentsQuery,
   useCreateAppointmentMutation
-} from '../hooks/useApiQueries';
+} from '../hooks';
 
 const mockPrescriptions = [
   {
@@ -105,7 +105,7 @@ const mockNotifications = [
 
 const PatientDashboard = () => {
   const navigate = useNavigate();
-  const { data: profileData } = usePatientProfileQuery();
+  const { data: profileData } = useProfileQuery();
 
   // REAL BACKEND DATA FETCHING VIA TANSTACK QUERY
   const { data: aptData } = usePatientAppointmentsQuery();
@@ -179,7 +179,7 @@ const PatientDashboard = () => {
   };
 
   const handleLogout = async () => {
-    await apiService.logoutUser();
+    await logoutUser();
     navigate('/login');
   };
 

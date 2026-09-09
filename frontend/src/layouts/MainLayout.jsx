@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { QuickBookingModal } from '../components/landing/QuickBookingModal';
-import { AuthModal } from '../components/auth/AuthModal';
-import { getAuthToken } from '../api/authApi';
+import { getAuthToken } from '../api';
 
 const MainLayout = () => {
   const navigate = useNavigate();

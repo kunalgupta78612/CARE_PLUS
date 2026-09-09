@@ -23,7 +23,7 @@ import {
   Zap,
   RefreshCw,
 } from "lucide-react";
-import apiService from "../api/apiService";
+import { logoutUser } from "../api";
 import {
   useAllAppointmentsQuery,
   useUpdateAppointmentStatusMutation,
@@ -31,7 +31,7 @@ import {
   useCreateInvoiceMutation,
   useUpdateInvoiceStatusMutation,
   useCreateAppointmentMutation,
-} from "../hooks/useApiQueries";
+} from "../hooks";
 
 const DOCTOR_LIST = [
   "All Doctors",
@@ -100,7 +100,7 @@ const ReceptionistDashboard = () => {
 
   // Logout Handler
   const handleLogout = async () => {
-    await apiService.logoutUser();
+    await logoutUser();
     navigate("/login");
   };
 

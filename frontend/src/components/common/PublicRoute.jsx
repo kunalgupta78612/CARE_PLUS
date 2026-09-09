@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { getAuthToken } from '../../api/authApi';
+import { getAuthToken } from '../../api';
 
 export const getDashboardForRole = (role) => {
   switch (role) {
